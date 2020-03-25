@@ -89,24 +89,24 @@ k=12
 estacionalidad.H1 = decompose(serie.ts)$seasonal[1:k]
 
 aux = rep(estacionalidad.H1, length(serieTr)/length(estacionalidad.H1))
-serieTr.SinTend.H1 = serieTr.SinTend.H1 - aux
-serieTs.SinTend.H1 = serieTs.SinTend.H1 - estacionalidad.H1
-plot.ts(serieTr.SinTend.H1, xlim=c(1,tiempoTs[length(tiempoTs)]))
-lines(tiempoTs, serieTs.SinTend.H1, col='red')
+serieTr.SinTendEst.H1 = serieTr.SinTend.H1 - aux
+serieTs.SinTendEst.H1 = serieTs.SinTend.H1 - estacionalidad.H1
+plot.ts(serieTr.SinTendEst.H1, xlim=c(1,tiempoTs[length(tiempoTs)]))
+lines(tiempoTs, serieTs.SinTendEst.H1, col='red')
 # quedando la serie sin estacionalidad.
 
 #############################################################################################
 # ESTACIONARIDAD
 
 # Visualizando ACF y encontrando que tiende a 0 muy rápidamente, podríamos pensar que es estacionaria
-acf(serieTr.SinTend.H1) # La tendencia a 0 es lenta y sobrepasa 0. Salimos de dudas con el test aumentado de Dickey-Fuller
+acf(serieTr.SinTendEst.H1) # La tendencia a 0 es lenta y sobrepasa 0. Salimos de dudas con el test aumentado de Dickey-Fuller
 
 # Aplicamos el test aumentado de Dickey-Fuller
-adftest.H1 = adf.test(serieTr.SinTend.H1)
+adftest.H1 = adf.test(serieTr.SinTendEst.H1)
 
 # Obtenemos que el p-valor es 0.6427417 > 0.05, por lo que no es estacionaria. Para conseguirlo, diferenciamos.
-serieTr.SinTendEstDiff.H1 = diff(serieTr.SinTend.H1)
-serieTs.SinTendEstDiff.H1 = diff(serieTs.SinTend.H1)
+serieTr.SinTendEstDiff.H1 = diff(serieTr.SinTendEst.H1)
+serieTs.SinTendEstDiff.H1 = diff(serieTs.SinTendEst.H1)
 
 # Volvemos a aplicar el mismo test
 adftest.H1 = adf.test(serieTr.SinTendEstDiff.H1) # Valor 0.01 < 0.05, por lo que es estacionaria con un nivel de confianza
@@ -115,3 +115,88 @@ adftest.H1 = adf.test(serieTr.SinTendEstDiff.H1) # Valor 0.01 < 0.05, por lo que
 # A continuación, lo vemos con las gráficas de autocorrelación y autocorrelación parcial, ya que tienden a cero muy rápidamente
 acf(serieTr.SinTendEstDiff.H1)
 pacf(serieTr.SinTendEstDiff.H1)
+
+# Con los resultados obtenidos, podemos proponer dos modelos distintos: autorregresivos AR o medias móviles MA. En ambos
+# casos es necesario definir el parámetro p. Empezando por el AR, dado que la gráfica ACF tiende a cero muy rápidamente
+# alternando valores positivos y negativos, nos fijamos en la gráfica PACF y vemos que la posición del último valor 
+# distinto de cero es 4. Para el caso del MA, procedemos al contrario, encontrando que el último valor distinto de cero
+# es el 16. Sin embargo, al estar tan cerca del margen definido, es posible que no obtengamos resultados muy significativo,
+# por lo que también probare con p = 1
+
+# AR(4). Como hemos diferenciado una vez para conseguir estacionaridad, utilizamos el modelo ARIMA(4,1,0). Asimismo, calculamos
+# el error de entrenamiento y test para comparar con otros modelos.
+
+
+#### PENDIENTE DE ARREGLAR RESPECTO DE DIFF
+modelo_arima.H1 = arima(serieTr.SinTendEst.H1, order=c(4,1,0))
+valoresAjustados1.H1 = serieTr.SinTendEst.H1 + modelo_arima.H1$residuals
+
+# Predicciones
+Predicciones1.H1 = predict(modelo_arima.H1,n.ahead=NPred)
+valoresPredichos1.H1 = Predicciones1.H1$pred
+
+# Error cuadrático acumulado del ajuste en entrenamiento y test
+errorTr1.H1 = sum((modelo_arima.H1$residuals)^2)
+errorTs1.H1 = sum((valoresPredichos1.H1- serieTs.SinTendEst.H1)^2)
+
+plot.ts(serieTr.SinTendEstDiff.H1, xlim=c(1,tiempoTs[length(tiempoTs)]))
+lines(valoresAjustados1.H1,col='blue')
+lines(tiempoTs,serieTs.SinTendEst.H1,col='red')
+lines(tiempoTs, valoresPredichos1.H1,col='blue')
+
+
+##############################################################################
+# VALIDACIÓN DE MODELOS
+
+# BONDAD DEL AJUSTE
+# Necesitamos evaluar la aleatoriedad de los residuos (Test de Box-Pierce) para descartar que el modelo tenga
+# sesgo, la normalidad de los residuos, para garantizar que la serie temporal ha sido modelada correctamente
+# (Test de Jarque Bera y Shapiro-Wilk) y realizar una confirmación gráfica
+
+boxtestM1 = Box.test(modelo_arima.H1$residuals) # pvalue 0.9416972 --> aleatoriedad
+JB.H1 = jarque.bera.test(modelo_arima.H1$residuals) # pvalue 0.8187785 --> normal
+SW.H1 = shapiro.test(modelo_arima.H1$residuals) # pvalue 0.2903847--> normal
+
+# Gráficamente vemos que los residuos son correctos porque siguen una normal
+hist(modelo_arima.H1$residuals, col='blue', prob=T, ylim=c(0,20), xlim=c(-0.2,0.2))
+lines(density(modelo_arima.H1$residuals))
+
+#############################################################################
+# PREDICCIÓN CON EL MODELO
+
+# Una vez validado el modelo, generamos la predicción para los datos de 1960
+serieEntera = serie.log
+tiempo = 1:length(serieEntera)
+parametros = lm(serieEntera ~ tiempo)
+TendEstimada = parametros$coefficients[1] + tiempo*parametros$coefficients[2]
+serieSinTend = serieEntera - TendEstimada
+aux = ts(serieEntera, frequency=12)
+aux = decompose(aux)$seasonal
+estacionalidad = as.numeric(aux[1:12])
+aux = rep(estacionalidad, length(serieSinTend)/length(estacionalidad))
+serieSinTendEst =serieSinTend - aux
+modelo = arima(serieSinTend, order=c(4,1,0))
+valoresAjustados = serieSinTendEst + modelo$residuals
+Predicciones = predict(modelo, n.ahead=NPred)
+valoresPredichos = Predicciones$pred
+
+valoresAjustados = valoresAjustados +aux # Estacionalidad
+valoresPredichos = valoresPredichos+estacionalidad
+
+valoresAjustados = valoresAjustados+TendEstimada # Tendencia
+tiempoPred = (tiempo[length(tiempo)]+(1:NPred))
+TendEstimadaPred = parametros$coefficients[1]+tiempoPred*parametros$coefficients[2]
+valoresPredichos = valoresPredichos + TendEstimadaPred
+
+valoresAjustados = exp(valoresAjustados) # por la transformación logarítmica que se hizo al principio
+valoresPredichos = exp(valoresPredichos)
+
+plot.ts(serie,xlim=c(1,max(tiempoPred)),ylim=c(100,650))
+lines(valoresAjustados, col='blue')
+lines(valoresPredichos, col='red')
+
+# Cargamos los valores reales de predicción para comparar con lo predicho
+predReales = scan('pasajeros_1960.predict')
+lines(tiempoPred,predReales,col='green')
+
+ErrorMedio = sum(abs(predReales-valoresPredichos))
