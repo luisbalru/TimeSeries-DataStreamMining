@@ -21,6 +21,8 @@ serie = scan('pasajeros_1949_1959.dat')
 # la serie presenta una estacionalidad anual. 
 serie.ts = ts(serie,frequency = 12)
 plot(decompose(serie.ts))
+# Encontramos a simple vista tendencia positiva, posiblemente lineal, y una estacionalidad clara, repitiéndose el patrón
+# a la misma distancia entre los puntos 'homólogos' desde el punto de vista del periodo. 
 
 # Como se puede ver, la varianza se mueve en valores entre -40 y 40, por lo que es demasiado grande.
 # Aplicamos un logaritmo para acotar esa variabilidad
@@ -44,6 +46,8 @@ lines(tiempoTs,serieTs,col='red')
 # MODELADO Y ELIMINACIÓN DE TENDENCIA
 
 # La serie parece tener una tendencia lineal, así que asumimos que así es y luego lo comprobamos con test estadísticos
+# El enfoque elegido es el de estimación funcional, ya que somos capaces de identificar la posible función, en este caso
+# una recta, que modela la tendencia. 
 parametros.H1 = lm(serieTr ~ tiempoTr) 
 
 # Estimación de la tendencia
@@ -81,6 +85,8 @@ lines(tiempoTs, serieTs.SinTend.H1, col='red')
 
 #############################################################################################
 # ELIMINACIÓN DE LA ESTACIONALIDAD
+
+# A simple vista parece que la función tiene estacionalidad. Para eliminarla, es vital conocer el periodo. 
 
 # Partiendo de la suposición de estacionalidad anual, utilizamos la función decompose y su parámetro
 # de estacionalidad en los 12 meses del test (los últimos) para eliminarla.
@@ -127,7 +133,11 @@ pacf(serieTr.SinTendEstDiff.H1)
 # el error de entrenamiento y test para comparar con otros modelos.
 
 
-#### PENDIENTE DE ARREGLAR RESPECTO DE DIFF
+# También se nos presenta la siguiente opción: utilizar la serie diferenciada o sin diferenciar. En el primer caso, tendríamos
+# que nuestro modelo AR sería ARIMA(4,0,1) y luego deshacer la diferenciación integrando. Por comodidad, optamos por el enfoque
+# planteado arriba (ARIMA(4,1,0)) para que sea el modelo quien haga la integración de forma automática.
+
+
 modelo_arima.H1 = arima(serieTr.SinTendEst.H1, order=c(4,1,0))
 valoresAjustados1.H1 = serieTr.SinTendEst.H1 + modelo_arima.H1$residuals
 
