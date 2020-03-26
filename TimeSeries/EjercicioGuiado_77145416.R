@@ -135,6 +135,10 @@ adftest.H1 = adf.test(serieTr.SinTendEstDiff.H1) # Valor 0.01 < 0.05, por lo que
 acf(serieTr.SinTendEstDiff.H1)
 pacf(serieTr.SinTendEstDiff.H1)
 
+
+#####################################################################
+# MODELOS
+
 # Con los resultados obtenidos, podemos proponer dos modelos distintos: autorregresivos AR o medias móviles MA. En ambos
 # casos es necesario definir el parámetro p. Empezando por el AR, dado que la gráfica ACF tiende a cero muy rápidamente
 # alternando valores positivos y negativos, nos fijamos en la gráfica PACF y vemos que la posición del último valor 
