@@ -9,8 +9,10 @@
 
 
 # Cargamos la librería de series temporales
-install.packages('tseries')
+#install.packages('tseries')
+#install.packages('forecast',dependecies=T)
 library(tseries)
+library(forecast)
 
 NPred = 12 # Valores a predecir
 NTest = 12 # Valores para test
@@ -24,8 +26,8 @@ plot(decompose(serie.ts))
 # Encontramos a simple vista tendencia positiva, posiblemente lineal, y una estacionalidad clara, repitiéndose el patrón
 # a la misma distancia entre los puntos 'homólogos' desde el punto de vista del periodo. 
 
-# Como se puede ver, la varianza se mueve en valores entre -40 y 40, por lo que es demasiado grande.
-# Aplicamos un logaritmo para acotar esa variabilidad
+# Como se puede ver, la varianza se mueve en valores entre -40 y 40, por lo que es demasiado grande. Necesitamos un preprocesamiento
+# de los datos. Aplicamos un logaritmo, normalizando así el tratamiento de la estacionalidad, para acotar esa variabilidad.
 serie.ts = log(serie.ts)
 serie.log = log(serie)
 plot(decompose(serie.ts))
@@ -42,12 +44,17 @@ tiempoTs = (tiempoTr[length(tiempoTr)]+1):(tiempoTr[length(tiempoTr)]+NTest)
 plot.ts(serieTr, xlim=c(1,tiempoTs[length(tiempoTs)]))
 lines(tiempoTs,serieTs,col='red')
 
+# A continuación, tratamos de estudiar la estacionaridad. Para ello, debemos eliminar previamente la tendencia y la estacionalidad.
+# Lo hacemos precisamente en ese orden porque para eliminar la estacionalidad aplicando la función de autocorrelación, es necesario que
+# la serie en ese momento ya no tenga tendencia, mostrándose así los patrones (anuales en este caso) sin distorsión.
+
 #############################################################################################
 # MODELADO Y ELIMINACIÓN DE TENDENCIA
 
 # La serie parece tener una tendencia lineal, así que asumimos que así es y luego lo comprobamos con test estadísticos
 # El enfoque elegido es el de estimación funcional, ya que somos capaces de identificar la posible función, en este caso
-# una recta, que modela la tendencia. 
+# una recta, que modela la tendencia. Otra posibilidad sería utilizar un filtro, pero aplicar modelo lineal desde el principio
+# es más simple y rápido
 parametros.H1 = lm(serieTr ~ tiempoTr) 
 
 # Estimación de la tendencia
@@ -86,16 +93,22 @@ lines(tiempoTs, serieTs.SinTend.H1, col='red')
 #############################################################################################
 # ELIMINACIÓN DE LA ESTACIONALIDAD
 
-# A simple vista parece que la función tiene estacionalidad. Para eliminarla, es vital conocer el periodo. 
+# A simple vista parece que la función tiene estacionalidad. Para eliminarla, es vital conocer el periodo. Utilizamos la función
+# de autocorrelación, y, sabiendo el periodo, calculamos la media para cada mes. Este cálculo lo realiza la función decompose
+# en su atributo seasonal. Tomando los 12 valores (correspondientes al periodo), podemos restarlos a la serie temporal (a los meses
+# homónimos de cada año) para sí eliminar la estacionalidad.
 
 # Partiendo de la suposición de estacionalidad anual, utilizamos la función decompose y su parámetro
-# de estacionalidad en los 12 meses del test (los últimos) para eliminarla.
+# de estacionalidad en los 12 meses del test (los últimos) para eliminarla. 
 # Periodo de estacionalidad
 k=12
 estacionalidad.H1 = decompose(serie.ts)$seasonal[1:k]
 
+# Se repiten los valores de la estacionalidad (en test) tantas veces como ciclos, es decir, 10 veces, dando lugar a 120 valores
 aux = rep(estacionalidad.H1, length(serieTr)/length(estacionalidad.H1))
+# Restamos esos valores de estacionalidad al conjunto de entrenamiento
 serieTr.SinTendEst.H1 = serieTr.SinTend.H1 - aux
+# Restamos la estacionalidad calculada con decompose 
 serieTs.SinTendEst.H1 = serieTs.SinTend.H1 - estacionalidad.H1
 plot.ts(serieTr.SinTendEst.H1, xlim=c(1,tiempoTs[length(tiempoTs)]))
 lines(tiempoTs, serieTs.SinTendEst.H1, col='red')
@@ -154,6 +167,39 @@ lines(valoresAjustados1.H1,col='blue')
 lines(tiempoTs,serieTs.SinTendEst.H1,col='red')
 lines(tiempoTs, valoresPredichos1.H1,col='blue')
 
+# MODELO MA
+
+# MA(1)
+modelo_ma.H1 = arima(serieTr.SinTendEst.H1, order=c(0,1,1))
+valoresAjustados2.H1 = serieTr.SinTendEst.H1 + modelo_ma.H1$residuals
+# Predicciones
+Predicciones2.H1 = predict(modelo_ma.H1,n.ahead=NPred)
+valoresPredichos2.H1 = Predicciones2.H1$pred
+
+# Error cuadrático acumulado del ajuste en entrenamiento y test
+errorTr2.H1 = sum((modelo_ma.H1$residuals)^2)
+errorTs2.H1 = sum((valoresPredichos2.H1- serieTs.SinTendEst.H1)^2)
+
+plot.ts(serieTr.SinTendEstDiff.H1, xlim=c(1,tiempoTs[length(tiempoTs)]))
+lines(valoresAjustados2.H1,col='blue')
+lines(tiempoTs,serieTs.SinTendEst.H1,col='red')
+lines(tiempoTs, valoresPredichos2.H1,col='blue')
+
+# MA(16)
+modelo_ma2.H1 = arima(serieTr.SinTendEst.H1, order=c(0,1,16))
+valoresAjustados3.H1 = serieTr.SinTendEst.H1 + modelo_ma2.H1$residuals
+# Predicciones
+Predicciones3.H1 = predict(modelo_ma2.H1,n.ahead=NPred)
+valoresPredichos3.H1 = Predicciones2.H1$pred
+
+# Error cuadrático acumulado del ajuste en entrenamiento y test
+errorTr3.H1 = sum((modelo_ma2.H1$residuals)^2)
+errorTs3.H1 = sum((valoresPredichos3.H1- serieTs.SinTendEst.H1)^2)
+
+plot.ts(serieTr.SinTendEstDiff.H1, xlim=c(1,tiempoTs[length(tiempoTs)]))
+lines(valoresAjustados3.H1,col='blue')
+lines(tiempoTs,serieTs.SinTendEst.H1,col='red')
+lines(tiempoTs, valoresPredichos3.H1,col='blue')
 
 ##############################################################################
 # VALIDACIÓN DE MODELOS
@@ -163,6 +209,7 @@ lines(tiempoTs, valoresPredichos1.H1,col='blue')
 # sesgo, la normalidad de los residuos, para garantizar que la serie temporal ha sido modelada correctamente
 # (Test de Jarque Bera y Shapiro-Wilk) y realizar una confirmación gráfica
 
+# MODELO AR(4)
 boxtestM1 = Box.test(modelo_arima.H1$residuals) # pvalue 0.9416972 --> aleatoriedad
 JB.H1 = jarque.bera.test(modelo_arima.H1$residuals) # pvalue 0.8187785 --> normal
 SW.H1 = shapiro.test(modelo_arima.H1$residuals) # pvalue 0.2903847--> normal
@@ -170,6 +217,24 @@ SW.H1 = shapiro.test(modelo_arima.H1$residuals) # pvalue 0.2903847--> normal
 # Gráficamente vemos que los residuos son correctos porque siguen una normal
 hist(modelo_arima.H1$residuals, col='blue', prob=T, ylim=c(0,20), xlim=c(-0.2,0.2))
 lines(density(modelo_arima.H1$residuals))
+
+# MODELO MA(1) --> cumple los tests estadísticos
+boxtestM2 = Box.test(modelo_ma.H1$residuals) # pvalue 0.976203 --> aleatoriedad
+JB2.H1 = jarque.bera.test(modelo_ma.H1$residuals) # pvalue 0.299881 --> normal
+SW2.H1 = shapiro.test(modelo_ma.H1$residuals) # pvalue 0.1979714--> normal
+
+# Gráficamente vemos que los residuos son correctos porque siguen una normal
+hist(modelo_ma.H1$residuals, col='blue', prob=T, ylim=c(0,20), xlim=c(-0.2,0.2))
+lines(density(modelo_ma.H1$residuals))
+
+# MODELO MA(16) --> cumple los tests estadísticos
+boxtestM3 = Box.test(modelo_ma2.H1$residuals) # pvalue 0.9539837--> aleatoriedad
+JB3.H1 = jarque.bera.test(modelo_ma2.H1$residuals) # pvalue 0.8983741 --> normal
+SW3.H1 = shapiro.test(modelo_ma2.H1$residuals) # pvalue 0.1761939-> normal
+
+# Gráficamente vemos que los residuos son correctos porque siguen una normal
+hist(modelo_ma2.H1$residuals, col='blue', prob=T, ylim=c(0,20), xlim=c(-0.2,0.2))
+lines(density(modelo_ma2.H1$residuals))
 
 #############################################################################
 # PREDICCIÓN CON EL MODELO
