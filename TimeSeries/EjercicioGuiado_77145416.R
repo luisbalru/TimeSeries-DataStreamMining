@@ -328,9 +328,13 @@ plot.ts(serie,xlim=c(1,max(tiempoPred)),ylim=c(100,650))
 lines(valoresAjustados, col='blue')
 lines(valoresPredichos, col='red')
 
+# Hasta aquí llegaría nuestro estudio si no tuviéramos los datos reales del año 1960. En este caso sí los tenemos, por lo que 
+# podemos comprobar cuán bueno ha sido nuestro ajuste. 
 
 # Cargamos los valores reales de predicción para comparar con lo predicho
 predReales = scan('pasajeros_1960.predict')
 lines(tiempoPred,predReales,col='green')
+# Sobre la gráfica anterior, en verde, representamos los verdaderos valores y a simple vista parecen ajustarse bastante bien.
+# Evaluémos el error medio cometido entre los valores reales y los predichos.
 
 ErrorMedio = sum(abs(predReales-valoresPredichos))
