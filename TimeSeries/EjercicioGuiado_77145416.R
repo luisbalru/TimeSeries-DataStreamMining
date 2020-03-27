@@ -24,14 +24,15 @@ serie = scan('pasajeros_1949_1959.dat')
 serie.ts = ts(serie,frequency = 12)
 plot(decompose(serie.ts))
 # Encontramos a simple vista tendencia positiva, posiblemente lineal, y una estacionalidad clara, repitiéndose el patrón
-# a la misma distancia entre los puntos 'homólogos' desde el punto de vista del periodo. 
+# a la misma distancia entre los puntos 'homólogos' desde el punto de vista del periodo (mensual). 
 
-# Como se puede ver, la varianza se mueve en valores entre -40 y 40, por lo que es demasiado grande. Necesitamos un preprocesamiento
-# de los datos. Aplicamos un logaritmo, normalizando así el tratamiento de la estacionalidad, para acotar esa variabilidad.
+# Como se puede ver, la parte aleatoria de la serie tiene un comportamiento errático, con un rango de movimiento muy amplio 
+# (variación en la varianza). Necesitamos un preprocesamiento de los datos. Además, la amplitud de la estacionalidad va 
+# aumentando con el tiempo. Aplicamos un logaritmo, normalizando así el tratamiento de la estacionalidad y acotando esa variabilidad.
 serie.ts = log(serie.ts)
 serie.log = log(serie)
 plot(decompose(serie.ts))
-# Como resultado de la transformación logarítmica, vemos que el rango de la varianza se ha reducido muchísimo
+# Como resultado de la transformación logarítmica, vemos que el rango de la componente aleatoria se ha reducido muchísimo
 # (-0.2,-0.05), por lo que ya podemos estudiar la tendencia y la estacionalidad de la serie
 
 # Dividimos ahora el conjunto de datos para entrenamiento y test. Como necesitamos predecir los valores de la  
