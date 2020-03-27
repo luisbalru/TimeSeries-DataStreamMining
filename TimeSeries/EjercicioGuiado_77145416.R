@@ -241,38 +241,93 @@ hist(modelo_ma2.H1$residuals, col='blue', prob=T, ylim=c(0,20), xlim=c(-0.2,0.2)
 lines(density(modelo_ma2.H1$residuals))
 
 #############################################################################
-# PREDICCIÓN CON EL MODELO
+# SELECCIÓN DEL MEJOR MODELO
 
-# Una vez validado el modelo, generamos la predicción para los datos de 1960
+# MSE
+
+# MODELO AR
+# El MSE en entrenamiento es 0.1344656 y en test 0.01965443
+
+# MODELO MA(1)
+# El MSE en entrenamiento es 0.1466546 y en test 0.03969083
+
+# MODELO MA(16)
+# El MSE entrenamiento es 0.1112006 y en test 0.03969083
+
+# Como se puede apreciar, el modelo AR es el que tiene menos MSE tanto en ajuste como en test, por lo que sería el más conveniente
+# a priori para predecir. Si comparamos MA(1) y MA(16), MA(16) obtiene menos errores aunque probablemente la complejidad del
+# modelo, evaluada en el número de parámetros, sea mucho mayor.
+
+# A continuación, con el criterio de información de Akaike confirmamos estos resultados y escogemos finalmente un modelo para 
+# predecir.
+
+
+# AIC = 2k +nLog(RSS/n)
+# k = grados de libertad; n = numero de datos; RSS = mua de los errores al cuadrado
+
+AIC(modelo_arima.H1,modelo_ma.H1,modelo_ma2.H1)
+
+# Como podemos ver, el modelo con menor valor de AIC es el AR (ARIMA(4,1,0)) CON -459.3873 y 5 parámetros.
+# Si comparamos el model MA(1) con el MA(16), vemos que el MA(16) tiene un gran número de parámetros, por lo que la complejidad
+# aumenta mucho. Además, el valor de AIC es mayor que el de MA(1). En definitiva, vemos que, a pesar de que la regla
+# heurística nos inclinaría a elegir MA(16), por ser el último valor en el ACF mayor que 0, el criterio de información de Akaike
+# termina por descartarlo. Por tanto, a elegir entre AR y MA, es preferible en este caso AR. De entre los dos MAs que tenemos,
+# mejor que MA(1)
+
+
+
+
+#############################################################################
+# PREDICCIÓN CON EL MODELO MÁS FAVORABLE SEGÚN AIC
+
+# Una vez validado el modelo, generamos la predicción para los datos de 1960. Para ello, debemos deshacer todos los cambios
+# sobre el conjunto de datos para así recuperar la serie temporal original. Es decir, deshacer la diferenciación, devolver la
+# estacionalidad, la tendencia y la transformación logarítmica.
+
+# Partimos de la serie con la transformación logarítmica
 serieEntera = serie.log
 tiempo = 1:length(serieEntera)
+# Generamos con el modelo lineal la tendencia estimada (aproximación funcional)
 parametros = lm(serieEntera ~ tiempo)
 TendEstimada = parametros$coefficients[1] + tiempo*parametros$coefficients[2]
+# Sobre la serie transformada, eliminamos la tendencia
 serieSinTend = serieEntera - TendEstimada
+# Calculamos la estacionalidad con la función de autocorrelación y las medias
 aux = ts(serieEntera, frequency=12)
 aux = decompose(aux)$seasonal
 estacionalidad = as.numeric(aux[1:12])
 aux = rep(estacionalidad, length(serieSinTend)/length(estacionalidad))
+# Calculada la estacionalidad, se la restamos a la serie temporal sin tendencia
 serieSinTendEst =serieSinTend - aux
+# Ajustamos un modelo ARIMA autoregresivo. Vimos que para asegurar la estacionaridad necesitábamos diferenciar una vez,
+# por lo que indicamos d=1. Además, según el PACF, el último valor distinto de 0 es el 4
 modelo = arima(serieSinTend, order=c(4,1,0))
+# Generamos los valores ajustados (en entrenamiento)
 valoresAjustados = serieSinTendEst + modelo$residuals
+# y 12 predicciones (en test)
 Predicciones = predict(modelo, n.ahead=NPred)
 valoresPredichos = Predicciones$pred
 
-valoresAjustados = valoresAjustados +aux # Estacionalidad
+# A continuación, devolvemos la estacionalidad tanto a los valores ajustados como predichos
+valoresAjustados = valoresAjustados +aux 
 valoresPredichos = valoresPredichos+estacionalidad
 
-valoresAjustados = valoresAjustados+TendEstimada # Tendencia
+# Asimismo, devolvemos la tendencia
+valoresAjustados = valoresAjustados+TendEstimada
 tiempoPred = (tiempo[length(tiempo)]+(1:NPred))
 TendEstimadaPred = parametros$coefficients[1]+tiempoPred*parametros$coefficients[2]
 valoresPredichos = valoresPredichos + TendEstimadaPred
 
-valoresAjustados = exp(valoresAjustados) # por la transformación logarítmica que se hizo al principio
+# Aplicamos una transformación exponencial a la serie con tendencia y estacionalidad para deshacer la transformación logarítmica
+# que se realizó al principio para paliar los problemas en la varianza de la estacionalidad
+valoresAjustados = exp(valoresAjustados) 
 valoresPredichos = exp(valoresPredichos)
 
+# Representamos los valores ajustados y predichos de la serie original
 plot.ts(serie,xlim=c(1,max(tiempoPred)),ylim=c(100,650))
 lines(valoresAjustados, col='blue')
 lines(valoresPredichos, col='red')
+
 
 # Cargamos los valores reales de predicción para comparar con lo predicho
 predReales = scan('pasajeros_1960.predict')
