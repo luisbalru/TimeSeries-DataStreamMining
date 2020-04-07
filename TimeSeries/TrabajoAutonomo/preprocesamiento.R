@@ -10,13 +10,13 @@
 
 # Lectura de datos
 data = read.csv('./data/2870.csv', header=T, sep=';')
+data$Fecha = as.Date(data$Fecha)
+data$Year = substring(data$Fecha, 1,4)
+data$Month = substring(data$Fecha,6,7)
 data$TMax = data$Tmax
 data$Tmax = NULL
 data$Tmax = data$TMax
 data$TMax = NULL
-data$Fecha = as.Date(data$Fecha)
-data$Year = substring(data$Fecha, 1,4)
-data$Month = substring(data$Fecha,6,7)
 # Resumen estadístico de las variables
 summary(data)
 
@@ -39,7 +39,14 @@ par(mfrow=c(1,1))
 # ruido. Además, como son pocos instancias (apenas 200, todas alejadas de las últimas fechas), no parece
 # que pueda tener un impacto grande en la predicción.
 
-data2 = na.omit(data)
+library(dplyr)
+data_nas = data %>% filter(is.na(data$Tmax))
+for(i in 1:nrow(data_nas)){
+  mes = data_nas[i,]$Month
+  anio = data_nas[i,]$Year
+  data_nas[i,]$Tmax = median((data %>% filter(!is.na(data$Tmax) & Year == anio & Month == mes))$Tmax)
+}
+data$Tmax[is.na(data$Tmax)] = data_nas$Tmax
 
 ######################################################################
 # Outliers
