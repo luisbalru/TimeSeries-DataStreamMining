@@ -7,7 +7,7 @@
 ######################################################################
 #                        PREPROCESAMIENTO                            #
 ######################################################################
-
+# setwd("~/Documentos/Master/TimeSeries-DataStreamMining/TimeSeries/TrabajoAutonomo")
 # Lectura de datos
 data = read.csv('./data/2870.csv', header=T, sep=';')
 data$Fecha = as.Date(data$Fecha)
@@ -73,7 +73,7 @@ plotNA.imputations(serie.ts,imp)
 plotNA.distribution(imp)
 plot(decompose(imp))
 # Probamos con Seadec
-imp2 = na_seadec(serie.ts)
+imp2 = na_seasplit(serie.ts,algorithm='ma')
 plotNA.imputations(serie.ts,imp2)
 plotNA.distribution(imp2)
 plot(decompose(imp2))
@@ -94,6 +94,7 @@ mesesn = c('01','02')
 meses = c('01','02','03','04','05','06','07','08','09','10','11','12')
 anios = c(2015,2016,2017)
 
+library(dplyr)
 cont = 1
 for(i in meses1){
   serie_mes[cont] = mean((data %>% filter(Month==i,Year==2013))$Tmax)
