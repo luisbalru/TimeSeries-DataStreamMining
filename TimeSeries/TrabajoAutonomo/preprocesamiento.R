@@ -32,23 +32,6 @@ par(mfrow=c(1,1))
 # Vemos que hay una alta correlación con Tmed y Tmin (menos). Luego lo confirmaremos
 
 ######################################################################
-# Valores perdidos. 
-# Decido obviar las tuplas con valores perdidos porque, para la característica
-# que queremos modelar, siempre que aparece un NA en ella, también aparecen en las demás relacionadas
-# con temperatura así que, la imputación de cualquier medida no tendría más efecto que el de introducir
-# ruido. Además, como son pocos instancias (apenas 200, todas alejadas de las últimas fechas), no parece
-# que pueda tener un impacto grande en la predicción.
-
-library(dplyr)
-data_nas = data %>% filter(is.na(data$Tmax))
-for(i in 1:nrow(data_nas)){
-  mes = data_nas[i,]$Month
-  anio = data_nas[i,]$Year
-  data_nas[i,]$Tmax = median((data %>% filter(!is.na(data$Tmax) & Year == anio & Month == mes))$Tmax)
-}
-data$Tmax[is.na(data$Tmax)] = data_nas$Tmax
-
-######################################################################
 # Outliers
 
 library(outliers)
@@ -66,3 +49,78 @@ extremo.l.extremo =  q1- 3*iqr
 
 vector_normal = data2$Tmax > extremo.s.normal | data2$Tmax < extremo.l.normal
 vector_extremo= data2$Tmax > extremo.s.extremo | data2$Tmax < extremo.l.extremo
+
+######################################################################
+# Transformación a serie temporal DIARIA
+library(tseries)
+serie.ts = ts(data$Tmax,frequency = 30)
+
+######################################################################
+# Valores perdidos. 
+
+install.packages('imputeTS')
+
+library(imputeTS)
+
+plotNA.distribution(serie.ts)
+plotNA.distributionBar(serie.ts)
+plotNA.gapsize(serie.ts)
+statsNA(serie.ts)
+
+# Probamos con Kalman
+imp = na_kalman(serie.ts)
+plotNA.imputations(serie.ts,imp)
+plotNA.distribution(imp)
+plot(decompose(imp))
+# Probamos con Seadec
+imp2 = na_seadec(serie.ts)
+plotNA.imputations(serie.ts,imp2)
+plotNA.distribution(imp2)
+plot(decompose(imp2))
+
+# Los plots me hacen pensar que la imputación más realista es la de Seadec, ya que en la franja donde hay más valores perdidos 
+# la hace con cierta irregularidad y no como una línea recta (Kalman)
+
+
+
+########################################################################
+# Transformación a serie temporal mensual
+# Recupero la imputación de datos sobre el dataset original
+data$Tmax = imp2
+serie_mes = c(1:57)
+
+meses1 = c('05','06','07','08','09','10','11','12')
+mesesn = c('01','02')
+meses = c('01','02','03','04','05','06','07','08','09','10','11','12')
+anios = c(2015,2016,2017)
+
+cont = 1
+for(i in meses1){
+  serie_mes[cont] = mean((data %>% filter(Month==i,Year==2013))$Tmax)
+  cont = cont+1
+}
+aux = 1
+for(i in meses){
+  if(aux<5){
+    serie_mes[cont] = mean((data %>% filter(Month==i,Year==2014))$Tmax)
+  }
+  else{
+    serie_mes[cont] = 0.8*mean((data %>% filter(Month==i,Year==2014))$Tmax)+0.2*serie_mes[cont-12]
+  }
+  cont = cont+1
+}
+
+for(i in anios){
+  for(j in meses){
+    serie_mes[cont] =  0.8*mean((data %>% filter(Month==j,Year==i))$Tmax)+0.2*serie_mes[cont-12]
+    cont = cont+1
+  }
+}
+
+for(i in mesesn){
+  serie_mes[cont] = 0.8*mean((data %>% filter(Month==i,Year==2018))$Tmax)+0.2*serie_mes[cont-12]
+  cont = cont+1
+}
+
+serie.mes = ts(serie_mes,frequency=12)
+plot(decompose(serie.mes))
