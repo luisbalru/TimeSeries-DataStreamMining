@@ -58,7 +58,8 @@ vector_extremo= data2$Tmax > extremo.s.extremo | data2$Tmax < extremo.l.extremo
 ######################################################################
 # Transformación a serie temporal DIARIA
 library(tseries)
-serie.ts = ts(data$Tmax,frequency = 30)
+d=data[298:1754,]
+serie.ts = ts(d$Tmax,frequency = 30)
 
 ######################################################################
 # Valores perdidos. 
@@ -77,24 +78,24 @@ imp = na_kalman(serie.ts)
 plotNA.imputations(serie.ts,imp)
 plotNA.distribution(imp)
 plot(decompose(imp))
-# Probamos con Seadec
+# Probamos con seasplit
 imp2 = na_seasplit(serie.ts,algorithm='ma')
 plotNA.imputations(serie.ts,imp2)
 plotNA.distribution(imp2)
 plot(decompose(imp2))
 
-# Los plots me hacen pensar que la imputación más realista es la de Seadec, ya que en la franja donde hay más valores perdidos 
+# Los plots me hacen pensar que la imputación más realista es la de Seasplit, ya que en la franja donde hay más valores perdidos 
 # la hace con cierta irregularidad y no como una línea recta (Kalman)
 
-write.table(imp2,file='Estacion2870_diaria.txt', sep='\t')
+write.table(imp2,file='./data/Estacion2870_diaria.txt', sep='\t',row.names = F, col.names = F)
 
 ########################################################################
 # Transformación a serie temporal mensual
 # Recupero la imputación de datos sobre el dataset original
-data$Tmax = imp2
-serie_mes = c(1:57)
+d$Tmax = imp2
+serie_mes = c(1:48)
 
-meses1 = c('05','06','07','08','09','10','11','12')
+meses1 = c('03','04','05','06','07','08','09','10','11','12')
 mesesn = c('01','02')
 meses = c('01','02','03','04','05','06','07','08','09','10','11','12')
 anios = c(2015,2016,2017)
@@ -102,32 +103,27 @@ anios = c(2015,2016,2017)
 
 cont = 1
 for(i in meses1){
-  serie_mes[cont] = mean((data %>% filter(Month==i,Year==2013))$Tmax)
-  cont = cont+1
-}
-aux = 1
-for(i in meses){
-  if(aux<5){
-    serie_mes[cont] = mean((data %>% filter(Month==i,Year==2014))$Tmax)
-  }
-  else{
-    serie_mes[cont] = 0.8*mean((data %>% filter(Month==i,Year==2014))$Tmax)+0.2*serie_mes[cont-12]
-  }
+  serie_mes[cont] = mean((d %>% filter(Month==i,Year==2014))$Tmax)
   cont = cont+1
 }
 
 for(i in anios){
   for(j in meses){
-    serie_mes[cont] =  0.8*mean((data %>% filter(Month==j,Year==i))$Tmax)+0.2*serie_mes[cont-12]
+    if(cont == 12){
+      serie_mes[cont] = mean((d %>% filter(Month==j,Year==i))$Tmax)
+    }
+    else{
+      serie_mes[cont] =  0.8*mean((d %>% filter(Month==j,Year==i))$Tmax)+0.2*serie_mes[cont-12]
+    }
     cont = cont+1
   }
 }
 
 for(i in mesesn){
-  serie_mes[cont] = 0.8*mean((data %>% filter(Month==i,Year==2018))$Tmax)+0.2*serie_mes[cont-12]
+  serie_mes[cont] = 0.8*mean((d %>% filter(Month==i,Year==2018))$Tmax)+0.2*serie_mes[cont-12]
   cont = cont+1
 }
 
 serie.mes = ts(serie_mes,frequency=12)
 plot(decompose(serie.mes))
-write.table(serie.mes,file='Estacion2870_mensual.txt', sep='\t')
+write.table(serie.mes,file='./data/Estacion2870_mensual.txt', sep='\t',row.names = F,col.names = F)
