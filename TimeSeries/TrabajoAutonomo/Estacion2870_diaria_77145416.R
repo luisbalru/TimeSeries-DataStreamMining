@@ -52,4 +52,12 @@ lines(tiempoTs, serieTs.SinEst.H1, col='red')
 
 # Obteniendo la serie sin estacionalidad
 
+#############################################################################################
+# ESTACIONARIDAD
 
+# Visualizando ACF y encontrando que tiende a 0 muy rápidamente, podríamos pensar que es estacionaria
+acf(serieTr.SinEst.H1) # La tendencia a 0 es lenta y sobrepasa 0. Salimos de dudas con el test aumentado de Dickey-Fuller
+
+# Aplicamos el test aumentado de Dickey-Fuller
+adftest.H1 = adf.test(serieTr.SinEst.H1)
+# p-valor == 0.01 < 0.05 --> la serie temporal es estacionaria
