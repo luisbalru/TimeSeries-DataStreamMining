@@ -56,8 +56,48 @@ lines(tiempoTs, serieTs.SinEst.H1, col='red')
 # ESTACIONARIDAD
 
 # Visualizando ACF y encontrando que tiende a 0 muy rápidamente, podríamos pensar que es estacionaria
-acf(serieTr.SinEst.H1) # La tendencia a 0 es lenta y sobrepasa 0. Salimos de dudas con el test aumentado de Dickey-Fuller
+acf(serieTr.SinEst.H1) # Nos aseguramos con el test de Dickey-Fuller
 
 # Aplicamos el test aumentado de Dickey-Fuller
 adftest.H1 = adf.test(serieTr.SinEst.H1)
 # p-valor == 0.01 < 0.05 --> la serie temporal es estacionaria
+
+serieTr.SinTendEstDiff.H1 = diff(serieTr.SinEst.H1)
+serieTs.SinTendEstDiff.H1 = diff(serieTs.SinEst.H1)
+acf(serieTr.SinTendEstDiff.H1)
+pacf(serieTr.SinTendEstDiff.H1)
+adftest.H2 = adf.test(serieTr.SinTendEstDiff.H1)
+
+# Tanto la gráfica de autocorrelación como la de autocorrelación parcial tienden a cero rápidamente
+acf(serieTr.SinEst.H1)
+pacf(serieTr.SinEst.H1)
+
+
+#####################################################################
+# MODELOS
+
+# Con los resultados obtenidos, podemos proponer dos modelos distintos: autorregresivos AR o medias móviles MA. En ambos
+# casos es necesario definir el parámetro p. Empezando por el AR, dado que la gráfica ACF tiende a cero muy rápidamente
+# nos fijamos en la gráfica PACF y vemos que la posición del último valor 
+# distinto de cero es 23, aunque también está el 15,12,8,7,6,5 o 4 como posibles valores. Además, como hemos diferenciado una 
+# vez, deberíamos incluirlo. Para el caso del MA, procedemos al contrario, encontrando que el 
+# último valor distinto de cero es el 23. Sin embargo, también podemos probar con 15, 5, 4 o 3, que son valores más claros por
+# sobresalir más del margen.
+
+# ARIMA(23,1,0)
+
+modelo_arima.H1 = arima(serieTr.SinEst.H1, order=c(5,1,0))
+valoresAjustados1.H1 = serieTr.SinEst.H1 + modelo_arima.H1$residuals
+
+# Predicciones
+Predicciones1.H1 = predict(modelo_arima.H1,n.ahead=NPred)
+valoresPredichos1.H1 = Predicciones1.H1$pred
+
+# Error cuadrático acumulado del ajuste en entrenamiento y test
+errorTr1.H1 = sum((modelo_arima.H1$residuals)^2)
+errorTs1.H1 = sum((valoresPredichos1.H1- serieTs.SinEst.H1)^2)
+
+plot.ts(serieTr.SinTendEstDiff.H1, xlim=c(1,tiempoTs[length(tiempoTs)]))
+lines(valoresAjustados1.H1,col='blue')
+lines(tiempoTs,serieTs.SinEst.H1,col='red')
+lines(tiempoTs, valoresPredichos1.H1,col='blue')
