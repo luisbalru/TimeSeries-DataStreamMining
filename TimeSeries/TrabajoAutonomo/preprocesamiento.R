@@ -59,7 +59,7 @@ vector_extremo= data2$Tmax > extremo.s.extremo | data2$Tmax < extremo.l.extremo
 # Transformación a serie temporal DIARIA
 library(tseries)
 d=data[298:1754,]
-serie.ts = ts(d$Tmax,frequency = 30)
+serie.ts = ts(d$Tmax,frequency = 365)
 
 ######################################################################
 # Valores perdidos. 
@@ -109,7 +109,7 @@ for(i in meses1){
 
 for(i in anios){
   for(j in meses){
-    if(cont == 12){
+    if(cont <= 12){
       serie_mes[cont] = mean((d %>% filter(Month==j,Year==i))$Tmax)
     }
     else{
