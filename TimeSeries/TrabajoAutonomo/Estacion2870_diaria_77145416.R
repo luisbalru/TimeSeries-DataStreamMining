@@ -101,3 +101,4 @@ plot.ts(serieTr.SinTendEstDiff.H1, xlim=c(1,tiempoTs[length(tiempoTs)]))
 lines(valoresAjustados1.H1,col='blue')
 lines(tiempoTs,serieTs.SinEst.H1,col='red')
 lines(tiempoTs, valoresPredichos1.H1,col='blue')
+  
