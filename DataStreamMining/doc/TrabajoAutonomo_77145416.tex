@@ -1,0 +1,142 @@
+\input{preambuloSimple.tex}
+\graphicspath{ {./images/} }
+\usepackage{subcaption}
+\usepackage{hyperref}
+\usepackage{soul}
+
+
+%----------------------------------------------------------------------------------------
+%	TÍTULO Y DATOS DEL ALUMNO
+%----------------------------------------------------------------------------------------
+
+\title{	
+\normalfont \normalsize 
+\textsc{\textbf{Series Temporales y Minería de Flujos de Datos (2019-2020)} \\ Máster Oficial Universitario en Ciencia de Datos e Ingeniería de Computadores \\ Universidad de Granada} \\ [25pt] % Your university, school and/or department name(s)
+\horrule{0.5pt} \\[0.4cm] % Thin top horizontal rule
+\huge Minería de Flujos de Datos. Trabajo Autónomo \\ % The assignment title
+\horrule{2pt} \\[0.5cm] % Thick bottom horizontal rule
+}
+
+\author{Luis Balderas Ruiz \\ \texttt{DNI:77145416N. luisbalderas@correo.ugr.es}} 
+ % Nombre y apellidos 
+
+
+\date{\normalsize\today} % Incluye la fecha actual
+
+%----------------------------------------------------------------------------------------
+% DOCUMENTO
+%----------------------------------------------------------------------------------------
+
+\begin{document}
+
+\maketitle % Muestra el Título
+
+\newpage %inserta un salto de página
+
+\tableofcontents % para generar el índice de contenidos
+
+\listoffigures
+
+\listoftables
+
+\newpage
+
+%
+%\begin{figure}[H] %con el [H] le obligamos a situar aquí la figura
+%	\centering
+%	\includegraphics[scale=0.6]{e1.png}  %el parámetro scale permite agrandar o achicar la imagen. En el nombre de archivo puede especificar directorios
+%	\caption{Progresión de la imagen de E en cada iteración} 
+%	\label{fig:e1}
+%\end{figure}
+
+
+\section{Teoría}
+
+\subsection{Cuestionario}
+
+\subsection{Problema de clasificación}
+
+\subsection{Concept Drift}
+
+\section{Prácticas}
+
+\subsection{Entrenamiento offline y evaluación posterior}
+
+\subsubsection{Entrenamiento de un clasificador HoeffdingTree estacionario con generador WaveFormGenerator y varias semillas en entrenamiento. HoeffdingTree adaptativo}
+
+Para enfrentar este problema, escribo un pequeño script con la ejecución en línea de órdenes de las sentencias necesarias para evaluar y entrenar un clasificador HoeffdingTree estacionario en primer lugar, y luego un HoeffdingTree adaptativo. Se hacen 30 ejecuciones por cada experimento propuesto, variando la semilla de entrenamiento entre 4 y 34
+
+\begin{figure}[H] %con el [H] le obligamos a situar aquí la figura
+	\centering
+	\includegraphics[scale=0.5]{off-code.png}  %el parámetro scale permite agrandar o achicar la imagen. En el nombre de archivo puede especificar directorios
+	\caption{Código para la ejecución del Entrenamiento offline} 
+	\label{fig:off1}
+\end{figure}
+
+Como resultado, al ejecutar la siguiente función, se genera un archivo que almacena los resultados de la precisión en clasificación y del estadístico Kappa:
+
+\begin{figure}[H] %con el [H] le obligamos a situar aquí la figura
+	\centering
+	\includegraphics[scale=0.4]{off-ev.png}  %el parámetro scale permite agrandar o achicar la imagen. En el nombre de archivo puede especificar directorios
+	\caption{Extracción de resultados en el Entrenamiento offline} 
+	\label{fig:off2}
+\end{figure}
+
+dando lugar a la siguiente tabla de datos:
+\begin{figure}[H] %con el [H] le obligamos a situar aquí la figura
+	\centering
+	\includegraphics[scale=0.45]{ejercicio-offline.png}  %el parámetro scale permite agrandar o achicar la imagen. En el nombre de archivo puede especificar directorios
+	\caption{Resultados de la precisión en clasificación y estadístico Kappa para Entrenamiento offline} 
+	\label{fig:off3}
+\end{figure}
+
+\subsubsection{¿Cree que algún clasificador es significativamente mejor que el otro?}
+
+A priori, revisando la tabla de resultados, no parece haber gran diferencia entre los dos clasificadores. Sin embargo, para asegurar la respuesta, es necesario aplicar una serie de test estadísticos: En primer lugar, el test de Shapiro-Wilk para comprobar la normalidad de las muestras, en este caso, de los resultados de la precisión. Si las muestras son normales, se aplica el test paramétrico t-test para ver si son significativamente distintas o no. Si no lo son, es necesario calcular la media de cada muestra para ver cuál es mayor. En el caso de no normalidad, debemos acudir a un test no paramétrico, como es el de Test U de Mann-Whitney para comprobar la diferencia entre las muestras. Si, siendo diferentes, alguna de ellas (o ambas) no siguen una distribución normal, calculamos la mediana en vez de la media para hacer la comparación. Para hacer todos estos cálculos, de aquí en adelante utilizo la siguiente función:
+
+\begin{figure}[H] %con el [H] le obligamos a situar aquí la figura
+	\centering
+	\includegraphics[scale=0.45]{comparaAl.png}  %el parámetro scale permite agrandar o achicar la imagen. En el nombre de archivo puede especificar directorios
+	\caption{Método para comparar el rendimiento de dos algoritmos} 
+	\label{fig:compAl}
+\end{figure}
+
+En concreto, para HoeffdingTree Adaptativo (HA) y HoeffdingTree no adaptativo (HNA), obtenemos que
+
+\begin{figure}[H] %con el [H] le obligamos a situar aquí la figura
+	\centering
+	\includegraphics[scale=0.35]{off1.png}  %el parámetro scale permite agrandar o achicar la imagen. En el nombre de archivo puede especificar directorios
+	\caption{Test de Shapiro-Wilk sobre HA y HNA} 
+	\label{fig:off4}
+\end{figure}
+ 
+la población de resultados de precisión para el algoritmo Hoeffding Tree adaptativo sigue una distribución normal (p-valor 0.3757... > 0.05) a diferencia de Hoeffding Tree no adaptativo, (p-valor 8.3028...e-07 < 0.05, rechazando la hipótesis de normalidad). Por tanto, es necesario utilizar el test no paramétrico (ya que no se cumplen las hipótesis para los paramétricos) para comparar el rendimiento de los clasificadores. 
+
+\begin{figure}[H] %con el [H] le obligamos a situar aquí la figura
+	\centering
+	\includegraphics[scale=0.5]{off2.png}  %el parámetro scale permite agrandar o achicar la imagen. En el nombre de archivo puede especificar directorios
+	\caption{Test U Mann Whitney y promedios para HA y HNA} 
+	\label{fig:off5}
+\end{figure}
+
+Se obtiene un p-valor para el test de Mann-Whitney de 8.4048...e-05 < 0.05, por lo que se rechaza la hipótesis de que las distribuciones son iguales. Los promedios (HNA con mediana, HA con media) arrojan que el HNA es mejor que el HA, aunque la diferencia es bastante estrecha. 
+\subsection{Entrenamiento online}
+
+\subsection{Entrenamiento online en datos con concept drift}
+
+\subsection{Entrenamiento online en datos con concept drift, incluyendo mecanismos para olvidar instancias pasadas}
+
+\subsection{Entrenamiento online en datos con concept drift, incluyendo mecanismos para reiniciar modelos tras la detección de cambios de concepto}
+
+
+
+
+\newpage
+\section{Bibliografía}
+
+%------------------------------------------------
+
+\bibliography{citas} %archivo citas.bib que contiene las entradas 
+\bibliographystyle{plain} % hay varias formas de citar
+
+\end{document}
