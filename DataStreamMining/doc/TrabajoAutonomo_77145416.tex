@@ -120,9 +120,102 @@ la población de resultados de precisión para el algoritmo Hoeffding Tree adapt
 \end{figure}
 
 Se obtiene un p-valor para el test de Mann-Whitney de 8.4048...e-05 < 0.05, por lo que se rechaza la hipótesis de que las distribuciones son iguales. Los promedios (HNA con mediana, HA con media) arrojan que el HNA es mejor que el HA, aunque la diferencia es bastante estrecha. 
+
 \subsection{Entrenamiento online}
 
+\subsubsection{Entrenamiento de un clasificador HoeffdingTree online (Interleaved Test-Then-Train) con generador WaveFormGenerator y varias semillas en entrenamiento. HoeffdingTree adaptativo}
+
+En esta ocasión, ejecutamos un entrenamiento online con el método Interleaved Test-Then-Train y con generado WaveFormGenerator para los clasificadores HoeffdingTree y HoeffdingTree adaptativo. Para ello, hacemos 30 ejecuciones con semillas distintas para generar una población de resultados y comparar los resultados:
+
+\begin{figure}[H] %con el [H] le obligamos a situar aquí la figura
+	\centering
+	\includegraphics[scale=0.4]{onl1.png}  %el parámetro scale permite agrandar o achicar la imagen. En el nombre de archivo puede especificar directorios
+	\caption{Entrenamiento online para HA y HNA} 
+	\label{fig:onl1}
+\end{figure}
+
+Recogemos los resultados en la siguiente tabla:
+
+\begin{figure}[H] %con el [H] le obligamos a situar aquí la figura
+	\centering
+	\includegraphics[scale=0.4]{onl-res.png}  %el parámetro scale permite agrandar o achicar la imagen. En el nombre de archivo puede especificar directorios
+	\caption{Resultados del Entrenamiento online para HA y HNA} 
+	\label{fig:onl2}
+\end{figure}
+
+\subsubsection{¿Cree que algún clasificador es significativamente mejor que el otro?}
+
+De nuevo vemos que los resultados en accuracy son parejos, todos alrededor de un 83\%. Sin embargo, realizo un estudio más detenido basado en test estadísticos. Primero, para poder aplicar un test que compare las dos muestras, debemos comprobar si son normales o no a través del test de Shapiro-Wilk:
+
+\begin{figure}[H] %con el [H] le obligamos a situar aquí la figura
+	\centering
+	\includegraphics[scale=0.4]{onl3.png}  %el parámetro scale permite agrandar o achicar la imagen. En el nombre de archivo puede especificar directorios
+	\caption{Shapiro-Wilk sobre Entrenamiento online para HA y HNA} 
+	\label{fig:onl3}
+\end{figure}
+
+Como ambos p-valores son mayores que 0.05, no podemos rechazar la hipótesis de normalidad, luego la asumimos. Siendo así, es posible aplicar un test paramétrico, por lo que utilizo el t-test:
+
+\begin{figure}[H] %con el [H] le obligamos a situar aquí la figura
+	\centering
+	\includegraphics[scale=0.4]{onl4.png}  %el parámetro scale permite agrandar o achicar la imagen. En el nombre de archivo puede especificar directorios
+	\caption{t-test y promedios para HA y HNA} 
+	\label{fig:onl4}
+\end{figure}
+
+El p-valor del t-test es menor que 0.05, por lo que rechazamos la hipótesis de que las distribuciones sean iguales y, como ambas son normales, calculamos el promedio vía la media, obteniendo que HoeffdingTree Adaptativo tiene un mejor rendimiento.
+
 \subsection{Entrenamiento online en datos con concept drift}
+
+Para el entrenamiento online, sobre el método InterleavedTestThenTrain, con HoeffdingTree y la configuración indicada del generador RandomRBFGeneratorDrift, planteo la siguiente orden en la interfaz gráfica de MOA:
+
+\textit{EvaluateInterleavedTestThenTrain -l trees.HoeffdingTree -s (generators.RandomRBFGeneratorDrift -s 0.001 -k 3 -a 7 -n 3) -i 2000000}
+
+siendo s la velocidad de cambio de los centroides en el modelo, k el número de centroides con drift, a el número de atributos, n el número de centroides, c número de clases (por defecto 2), i la semilla para la generación de instancias y r la semilla para la generación del modelo (por defecto 1 ambas). En consecuencia, se obtienen los siguientes resultados, primero la gráfica de la precisión y luego los estadísticos:
+
+\begin{figure}[H] %con el [H] le obligamos a situar aquí la figura
+	\centering
+	\includegraphics[scale=0.4]{cd1.png}  %el parámetro scale permite agrandar o achicar la imagen. En el nombre de archivo puede especificar directorios
+	\caption{Gráfica de precisión en la clasificación respecto al número de instancias} 
+	\label{fig:cd1}
+\end{figure}
+
+Vemos en la gráfica que el rendimiento va decayendo lentamente conforme aumenta el número de instancias. Si observamos los valores estadísticos
+
+\begin{figure}[H] %con el [H] le obligamos a situar aquí la figura
+	\centering
+	\includegraphics[scale=0.5]{cd2.png}  %el parámetro scale permite agrandar o achicar la imagen. En el nombre de archivo puede especificar directorios
+	\caption{Medidas de rendimiento del modelo} 
+	\label{fig:cd2}
+\end{figure}
+
+obtenemos un 80.86\% de accuracy y un Kappa de 61.65.
+
+Pasamos ahora al clasificador HoeffdingTree adaptativo:
+
+\textit{EvaluateInterleavedTestThenTrain -l trees.HoeffdingAdaptiveTree -s (generators.RandomRBFGeneratorDrift -s 0.001 -k 3 -a 7 -n 3) -i 2000000}
+
+Presentamos a continuación los resultados de curva de acierto:
+
+\begin{figure}[H] %con el [H] le obligamos a situar aquí la figura
+	\centering
+	\includegraphics[scale=0.4]{cd3.png}  %el parámetro scale permite agrandar o achicar la imagen. En el nombre de archivo puede especificar directorios
+	\caption{Gráfica de precisión en la clasificación respecto al número de instancias} 
+	\label{fig:cd3}
+\end{figure}
+
+Si bien es cierto que los tests estadísticos en las secciones anteriores nos han indicado que se encontraban diferencias entre HoeffdingTree y HoeffdingAdaptiveTree, el rendimiento era prácticamente parejo. Podríamos extraer la idea de que, si no hay cambio de concepto, un clasificador y su versión adaptativa no tienen apenas diferencias. Esta es la primera vez en la que vemos la mejoría de la adaptación respecto del algoritmo original, habida cuenta de que este último iba empeorando su rendimiento conforme se introducían los nuevos datos y, sin embargo, el adaptativo obtiene un resultado estable y, además, muy bueno. Lo confirmamos con la tabla de medidas:
+
+\begin{figure}[H] %con el [H] le obligamos a situar aquí la figura
+	\centering
+	\includegraphics[scale=0.4]{cd4.png}  %el parámetro scale permite agrandar o achicar la imagen. En el nombre de archivo puede especificar directorios
+	\caption{Medidas de rendimiento del algoritmo HoeffdingAdaptiveTree} 
+	\label{fig:cd4}
+\end{figure}
+
+viendo que, verdaderamente, hay diferencias significativas. Lo confirmamos a continuación con un estudio estadístico, modificando las semillas.
+
+
 
 \subsection{Entrenamiento online en datos con concept drift, incluyendo mecanismos para olvidar instancias pasadas}
 

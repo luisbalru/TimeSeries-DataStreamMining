@@ -94,7 +94,42 @@ def EjercicioOnline():
                    "EvaluateInterleavedTestThenTrain -l trees.HoeffdingTree \
                    -s (generators.WaveformGenerator -i ' + str(i)+') -i 1000000 -f 10000" > online/HNA/hna' + str(i)+'.csv')
 
+def EvaluacionEjercicioOnline(dir1='online/HNA', dir2 = 'online/HA'):
+    files1 = os.listdir(dir1)
+    files2 = os.listdir(dir2)
+    ha_acc = []
+    ha_kap = []
+    hna_acc = []
+    hna_kap  = []
+    for f in files1:
+        data = pd.read_csv(dir1+'/'+f)
+        hna_acc.append(data.iloc[-1,4:5][0])
+        hna_kap.append(data.iloc[-1,5:6][0])
+    for f in files2:
+        data = pd.read_csv(dir2+'/'+f)
+        ha_acc.append(data.iloc[-1,4:5][0])
+        ha_kap.append(data.iloc[-1,5:6][0])
+    resultado = pd.DataFrame({"i":np.arange(1,31).tolist(),'Accuracy HNA':hna_acc,'Kappa HNA':hna_kap, 'Accuracy HA':ha_acc, 'Kappa HA': ha_kap})
+    resultado.to_csv('ejercicio_online.csv',index=False)
+    comparaAlgoritmos(resultado['Accuracy HNA'], resultado['Accuracy HA'], 'Accuracy HNA', 'Accuracy HA')
+    return(resultado)
+
+
+def EjercicioOnlineCD():
+    print("HoeffdingTree y HoeffdingTree adaptativo online con drift")
+    for i in range(1,31):
+        os.system('java -cp moa.jar -javaagent:sizeofag-1.0.4.jar moa.DoTask \
+                   "EvaluateInterleavedTestThenTrain -l trees.HoeffdingAdaptiveTree \
+                   -s (generators.RandomRBFGeneratorDrift -s 0.001 -k 3 -a 7 -n 3 -i '+str(i)+' -r '+str(i)+') -i 2000000" > online/HA/ha' + str(i)+'.csv')
+        os.system('java -cp moa.jar -javaagent:sizeofag-1.0.4.jar moa.DoTask \
+                   "EvaluateInterleavedTestThenTrain -l trees.HoeffdingTree \
+                   -s (generators.RandomRBFGeneratorDrift -s 0.001 -k 3 -a 7 -n 3 -i '+str(i)+' -r '+str(i)+') -i 2000000" > online/HNA/hna' + str(i)+'.csv')
+
+
+
 #EjercicioOffline(False)
 #EjercicioOffline(True)
 #EvaluacionEjercicioOffline()
-EjercicioOnline()
+#EjercicioOnline()
+#EvaluacionEjercicioOnline()
+EjercicioOnlineCD()
