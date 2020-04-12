@@ -84,6 +84,17 @@ def CreaPoblacion(dir1='NB',dir2='HT'):
     resultado = pd.DataFrame({'NB':nbs,'HT':hts})
     return(resultado)
 
+def EjercicioOnline():
+    print("HoeffdingTree y HoeffdingTree adaptativo online")
+    for i in range(1,31):
+        os.system('java -cp moa.jar -javaagent:sizeofag-1.0.4.jar moa.DoTask \
+                   "EvaluateInterleavedTestThenTrain -l trees.HoeffdingAdaptiveTree \
+                   -s (generators.WaveformGenerator -i ' + str(i)+') -i 1000000 -f 10000" > online/HA/ha' + str(i)+'.csv')
+        os.system('java -cp moa.jar -javaagent:sizeofag-1.0.4.jar moa.DoTask \
+                   "EvaluateInterleavedTestThenTrain -l trees.HoeffdingTree \
+                   -s (generators.WaveformGenerator -i ' + str(i)+') -i 1000000 -f 10000" > online/HNA/hna' + str(i)+'.csv')
+
 #EjercicioOffline(False)
 #EjercicioOffline(True)
-EvaluacionEjercicioOffline()
+#EvaluacionEjercicioOffline()
+EjercicioOnline()
