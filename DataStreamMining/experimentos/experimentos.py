@@ -120,10 +120,20 @@ def EjercicioOnlineCD():
     for i in range(1,31):
         os.system('java -cp moa.jar -javaagent:sizeofag-1.0.4.jar moa.DoTask \
                    "EvaluateInterleavedTestThenTrain -l trees.HoeffdingAdaptiveTree \
-                   -s (generators.RandomRBFGeneratorDrift -s 0.001 -k 3 -a 7 -n 3 -i '+str(i)+' -r '+str(i)+') -i 2000000" > online/HA/ha' + str(i)+'.csv')
+                   -s (generators.RandomRBFGeneratorDrift -s 0.001 -k 3 -a 7 -n 3 -i '+str(i)+' -r '+str(i)+') -i 2000000" > onlineCD/HA/ha' + str(i)+'.csv')
         os.system('java -cp moa.jar -javaagent:sizeofag-1.0.4.jar moa.DoTask \
                    "EvaluateInterleavedTestThenTrain -l trees.HoeffdingTree \
-                   -s (generators.RandomRBFGeneratorDrift -s 0.001 -k 3 -a 7 -n 3 -i '+str(i)+' -r '+str(i)+') -i 2000000" > online/HNA/hna' + str(i)+'.csv')
+                   -s (generators.RandomRBFGeneratorDrift -s 0.001 -k 3 -a 7 -n 3 -i '+str(i)+' -r '+str(i)+') -i 2000000" > onlineCD/HNA/hna' + str(i)+'.csv')
+
+def EjercicioOnlineCDOlvido():
+    print("HoeffdingTree y HoeffdingTree adaptativo online con drift y olvido")
+    for i in range(1,31):
+        os.system('java -cp moa.jar -javaagent:sizeofag-1.0.4.jar moa.DoTask \
+                   "EvaluatePrequential -l trees.HoeffdingAdaptiveTree \
+                   -s (generators.RandomRBFGeneratorDrift -s 0.001 -k 3 -a 7 -n 3 -i '+str(i)+' -r '+str(i)+') -w 1000 -i 2000000" > onlineCDol/HA/ha' + str(i)+'.csv')
+        os.system('java -cp moa.jar -javaagent:sizeofag-1.0.4.jar moa.DoTask \
+                   "EvaluatePrequential -l trees.HoeffdingTree \
+                   -s (generators.RandomRBFGeneratorDrift -s 0.001 -k 3 -a 7 -n 3 -i '+str(i)+' -r '+str(i)+') -w 1000 -i 2000000" > onlineCDol/HNA/hna' + str(i)+'.csv')
 
 
 
@@ -131,5 +141,6 @@ def EjercicioOnlineCD():
 #EjercicioOffline(True)
 #EvaluacionEjercicioOffline()
 #EjercicioOnline()
-#EvaluacionEjercicioOnline()
-EjercicioOnlineCD()
+EvaluacionEjercicioOnline('onlineCDol/HA','onlineCDol/HNA')
+#EjercicioOnlineCD()
+#EjercicioOnlineCDOlvido()

@@ -213,12 +213,73 @@ Si bien es cierto que los tests estadísticos en las secciones anteriores nos ha
 	\label{fig:cd4}
 \end{figure}
 
-viendo que, verdaderamente, hay diferencias significativas. Lo confirmamos a continuación con un estudio estadístico, modificando las semillas.
+viendo que, verdaderamente, hay diferencias significativas. Lo confirmamos a continuación con un estudio estadístico, modificando las semillas. Generamos 30 ejecuciones por algoritmos, obteniendo el siguiente resultado:
 
+\begin{figure}[H] %con el [H] le obligamos a situar aquí la figura
+	\centering
+	\includegraphics[scale=0.4]{cd5.png}  %el parámetro scale permite agrandar o achicar la imagen. En el nombre de archivo puede especificar directorios
+	\caption{Tests estadísticos para comparar los clasificadores} 
+	\label{fig:cd5}
+\end{figure}
 
+Vemos que los resultados provenientes del clasificador HoeffdingTree no son siguen una distribución normal, mientras que el adaptativo sí, por lo que aplicamos un test no paramétrico y vemos que se rechaza la hipótesis de que los algoritmos sean iguales, viéndose que, claramente, hay diferencias significativas en favor del HoeffdingAdaptiveTree.
 
 \subsection{Entrenamiento online en datos con concept drift, incluyendo mecanismos para olvidar instancias pasadas}
 
+Para conseguir que se olviden instancias pasadas y se base en las nuevas, sustituyo EvaluateInterleavedTestThenTrain por EvaluatePrequential y añado el tamaño de la ventana. Primero, lo ejecutamos para el clasificador adaptativo con la siguiente sentencia
+
+\textit{EvaluatePrequential -l trees.HoeffdingAdaptiveTree -s (generators.RandomRBFGeneratorDrift -s 0.001 -k 3 -a 7 -n 3) -i 2000000 -w 1000}
+
+obteniendo esta gráfica
+
+\begin{figure}[H] %con el [H] le obligamos a situar aquí la figura
+	\centering
+	\includegraphics[scale=0.4]{graph4.png}  %el parámetro scale permite agrandar o achicar la imagen. En el nombre de archivo puede especificar directorios
+	\caption{HoeffdingTree Adaptativo olvidando instancias pasadas} 
+	\label{fig:graph4}
+\end{figure}
+
+y las siguientes medidas 
+
+\begin{figure}[H] %con el [H] le obligamos a situar aquí la figura
+	\centering
+	\includegraphics[scale=0.5]{measures41.png}  %el parámetro scale permite agrandar o achicar la imagen. En el nombre de archivo puede especificar directorios
+	\caption{Resultados para HoeffdingTree Adaptativo olvidando instancias pasadas} 
+	\label{fig:measure41}
+\end{figure}
+
+mejorando aún más los resultados que en el ConceptDrift anterior. Si ahora nos centramos en el HoeffdingTree
+
+\textit{EvaluatePrequential -l trees.HoeffdingTree -s (generators.RandomRBFGeneratorDrift -s 0.001 -k 3 -a 7 -n 3) -i 2000000 -w 1000}
+
+vemos a través de su gráfica y sus medidas que los resultados no son tan buenos:
+
+\begin{figure}[H] %con el [H] le obligamos a situar aquí la figura
+	\centering
+	\includegraphics[scale=0.4]{graph42.png}  %el parámetro scale permite agrandar o achicar la imagen. En el nombre de archivo puede especificar directorios
+	\caption{HoeffdingTree olvidando instancias pasadas} 
+	\label{fig:graph42}
+\end{figure}
+
+\begin{figure}[H] %con el [H] le obligamos a situar aquí la figura
+	\centering
+	\includegraphics[scale=0.5]{measures42.png}  %el parámetro scale permite agrandar o achicar la imagen. En el nombre de archivo puede especificar directorios
+	\caption{Resultados para HoeffdingTree  olvidando instancias pasadas} 
+	\label{fig:measure42}
+\end{figure}
+
+Vemos en la gráfica que, para cada cambio de concepto, el clasificador tiene una bajada en rendimiento y vuelve a subir, pero desde luego los resultados son los peores hasta el momento.
+
+Tras 30 ejecuciones con semillas distintas, siguiendo la misma metodología que en las anteriores secciones, obtenemos los siguientes resultados:
+
+\begin{figure}[H] %con el [H] le obligamos a situar aquí la figura
+	\centering
+	\includegraphics[scale=0.5]{test4.png}  %el parámetro scale permite agrandar o achicar la imagen. En el nombre de archivo puede especificar directorios
+	\caption{Diferencias significativas entre los clasificadores} 
+	\label{fig:test4}
+\end{figure}
+
+Como se puede ver, según el test U de Mann-Whitney, rechazamos la hipótesis de que los clasificadores sean equivalentes, por lo que hay diferencias significativas a favor del HoeffdingAdaptiveTree.
 \subsection{Entrenamiento online en datos con concept drift, incluyendo mecanismos para reiniciar modelos tras la detección de cambios de concepto}
 
 
