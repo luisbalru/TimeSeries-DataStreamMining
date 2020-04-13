@@ -53,11 +53,17 @@
 \section{Teoría}
 
 \subsection{Cuestionario}
-
+\begin{figure}[H] %con el [H] le obligamos a situar aquí la figura
+	\centering
+	\includegraphics[scale=0.65]{cuestionario.jpg}  %el parámetro scale permite agrandar o achicar la imagen. En el nombre de archivo puede especificar directorios
+	\caption{Cuestionario de teoría} 
+	\label{cuestionario}
+\end{figure}
 \subsection{Problema de clasificación}
 
 \subsection{Concept Drift}
 
+\newpage
 \section{Prácticas}
 
 \subsection{Entrenamiento offline y evaluación posterior}
@@ -92,7 +98,7 @@ dando lugar a la siguiente tabla de datos:
 
 \subsubsection{¿Cree que algún clasificador es significativamente mejor que el otro?}
 
-A priori, revisando la tabla de resultados, no parece haber gran diferencia entre los dos clasificadores. Sin embargo, para asegurar la respuesta, es necesario aplicar una serie de test estadísticos: En primer lugar, el test de Shapiro-Wilk para comprobar la normalidad de las muestras, en este caso, de los resultados de la precisión. Si las muestras son normales, se aplica el test paramétrico t-test para ver si son significativamente distintas o no. Si no lo son, es necesario calcular la media de cada muestra para ver cuál es mayor. En el caso de no normalidad, debemos acudir a un test no paramétrico, como es el de Test U de Mann-Whitney (\cite{umw}) para comprobar la diferencia entre las muestras. Si, siendo diferentes, alguna de ellas (o ambas) no siguen una distribución normal, calculamos la mediana en vez de la media para hacer la comparación. Para hacer todos estos cálculos, de aquí en adelante utilizo la siguiente función:
+A priori, revisando la tabla de resultados, no parece haber gran diferencia entre los dos clasificadores. Sin embargo, para asegurar la respuesta, es necesario aplicar una serie de test estadísticos: En primer lugar, el test de Shapiro-Wilk (\cite{sw}) para comprobar la normalidad de las muestras, en este caso, de los resultados de la precisión. Si las muestras son normales, se aplica el test paramétrico t-test para ver si existen diferencias estadísticamente significativas o no. Si no lo son, es necesario calcular la media de cada muestra para ver cuál es mayor. En el caso de no normalidad, debemos acudir a un test no paramétrico, como es el de Test U de Mann-Whitney (\cite{umw}) para comprobar la diferencia entre las muestras. Si, siendo diferentes, alguna de ellas (o ambas) no siguen una distribución normal, calculamos la mediana en vez de la media para hacer la comparación. Para hacer todos estos cálculos, de aquí en adelante utilizo la siguiente función:
 
 \begin{figure}[H] %con el [H] le obligamos a situar aquí la figura
 	\centering
@@ -193,7 +199,7 @@ obtenemos un 80.86\% de accuracy y un Kappa de 61.65.
 
 Pasamos ahora al clasificador HoeffdingTree adaptativo:
 
-\textit{EvaluateInterleavedTestThenTrain -l trees.HoeffdingAdaptiveTree -s (generators.RandomRBFGeneratorDrift -s 0.001 -k 3 -a 7 -n 3) -i 2000000}
+\textit{EvaluateInterleavedTestThenTrain -l trees.HoeffdingAdaptiveTree -s \\ (generators.RandomRBFGeneratorDrift -s 0.001 -k 3 -a 7 -n 3) -i 2000000}
 
 Presentamos a continuación los resultados de curva de acierto:
 
@@ -308,7 +314,7 @@ Lo confirmamos en la tabla de medidas, con un accuracy medio del 97.3\% y un est
 
 Pasamos ahora al clasificador HoeffdingAdaptiveTree, que ejecuto con la siguiente orden:
 
-\textit{EvaluateInterleavedTestThenTrain -l (moa.classifiers.drift.SingleClassifierDrift -l trees.HoeffdingAdaptiveTree -d DDM) -s (generators.RandomRBFGeneratorDrift -s 0.001 -k 3 -a 7 -n 3) -i 2000000}
+\textit{EvaluateInterleavedTestThenTrain -l (moa.classifiers.drift.SingleClassifierDrift -l \\ trees.HoeffdingAdaptiveTree -d DDM) -s (generators.RandomRBFGeneratorDrift -s 0.001 -k 3 -a 7 -n 3) -i 2000000}
 
 Como vemos en su gráfica y en la tabla de resultados, el rendimiento es algo menor pero igualmente estable conforme se van  añadiendo nuevos datos. Ninguno de los clasificadores se ve afectado por los cambios de concepto.
 
@@ -335,6 +341,28 @@ Como los resultados han sido muy similares, evaluamos estadísticamente si hay d
 	\caption{Test de diferencias con DDM} 
 	\label{fig:test5}
 \end{figure}
+
+\subsubsection{¿Qué diferencias se producen entre los métodos de los apartados 2.3,2.4 y 2.5?}
+
+En los apartados 2.3, 2.4 y 2.5 mantenemos un esquema común de clasificadores (HoeffdingTree y HoeffdingAdaptiveTree) y de generador (RBFGeneratorDrift) que es el que introduce el cambio de concepto. Lo que se varía entre el apartado 2.3 y 2.4 es la forma de evaluar el flujo de datos en la clasificación. En 2.3 se utiliza InterleavedTestThenTrain para evaluar, en el que se utilizan todos los ejemplos vistos hasta el presente para calcular la precisión. Como contábamos con un modelo que no se adaptaba a cambios de concepto y otro que sí, al tener en cuenta todos los datos en la evaluación, HoeffdingTree iba empeorando su rendimiento conforme se introducían nuevos ejemplos. HoeffdingAdaptiveTree, por su parte, era capaz de mantener una precisión muy alta a pesar de los nuevos conceptos. Sin embargo, en 2.4 se introduce el factor de olvido de la mano de Prequential, que considera sólo los ejemplos más recientes para calcular la presión por medio de una ventana deslizante o factor de decaimiento (1000 en nuestro caso).  Sea $\alpha$ dicho factor de decaimiento. Entonces:
+
+$$E_i = \frac{S_i}{B_i}$$
+con
+$$S_i = L_i + \alpha S_{i-1}$$
+$$B_i = n_i + \alpha B_{i-1}$$
+siendo $n_i$ el número de ejemplos utilizados para calcular la función de pérdida $L_i$. (\cite{moa-manual}).
+
+
+Vemos como, de nuevo, HoeffdingAdaptiveTree es capaz de mantener el rendimiento aunque con pequeños vaivenes fruto del cambio en las evaluaciones del modelo. Sin embargo, vemos claramente como HoeffdingTree no es lo suficientemente robusto para mantener la precisión, de forma que va perdiendo y ganando accuracy, ya que la ventana deslizante hace que los aciertos que hizo en el pasado se vayan olvidando.
+
+En 2.5 volvemos a evaluar con InterleavedTestThenTrain pero introduciendo el modelo por un clasificador simple, en el que se utiliza un método de detección de cambio (DDM (\cite{ddm})) que controla el número de errores producidos por el modelo de aprendizaje durante la predicción. Compara las estadísticas de dos ventanas: la primera contiene todos los datos y la segunda sólo los datos desde el principio hasta que el número de errores aumenta. Se considera que el número de errores en una muestra se modela a través de una distribución binomial. Un aumento significante en el error del algoritmo sugiere que la distribución de la clase está cambiando y, por tanto, el modelo actual es inapropiado. Definen un nivel de precaución y un nivel de cambio que se van evaluando y se actúa en consecuencia. Se actúa de la siguiente manera (\cite{moa-manual}, \cite{ddm}). Para cada punto $i$ de la muestra, el error es la probabilidad de clasificación errónea $p_i$, con una desviación estándar dada por $s_i = \sqrt{p_i (1-p_i)/i}$. Se almacenan los valores de $p_i$ y $s_i$ cuando $p_i+s_i$ alcanza su mínimo valor durante el proceso ($p_{min}$ y $s_{min}$). A partir de ese momento,
+
+\begin{itemize}
+	\item Nivel de precaución: $p_i + s_i \geq p_{min} + 2 s_{min}$
+	\item Nivel de cambio: $p_i + s_i \geq p_{min} + 3 s_{min}$
+\end{itemize} 
+
+Es, por tanto, un clasificador que es capaz de lidiar con los cambios en los flujos, por lo que la clave que diferenciaba a HoeffdingTree y HoeffdingAdaptiveTree se pierde y, efectivamente, el test estadístico nos muestra que no hay diferencias significativas entre ellos. 
 \newpage
 \section{Bibliografía}
 
