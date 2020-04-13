@@ -69,21 +69,6 @@ def EvaluacionEjercicioOffline(dir1='offline/HNA', dir2 = 'offline/HA'):
     comparaAlgoritmos(resultado['Accuracy HNA'], resultado['Accuracy HA'], 'Accuracy HNA', 'Accuracy HA')
     return(resultado)
 
-
-def CreaPoblacion(dir1='NB',dir2='HT'):
-    files1 = os.listdir(dir1)
-    files2 = os.listdir(dir2)
-    nbs = []
-    hts = []
-    for f in files1:
-        data = pd.read_csv(dir1+'/'+f)
-        nbs.append(data.iloc[-1,4])
-    for f in files2:
-        data = pd.read_csv(dir2+'/'+f)
-        hts.append(data.iloc[-1,4])
-    resultado = pd.DataFrame({'NB':nbs,'HT':hts})
-    return(resultado)
-
 def EjercicioOnline():
     print("HoeffdingTree y HoeffdingTree adaptativo online")
     for i in range(1,31):
@@ -136,11 +121,22 @@ def EjercicioOnlineCDOlvido():
                    -s (generators.RandomRBFGeneratorDrift -s 0.001 -k 3 -a 7 -n 3 -i '+str(i)+' -r '+str(i)+') -w 1000 -i 2000000" > onlineCDol/HNA/hna' + str(i)+'.csv')
 
 
+def EjercicioDDM():
+    print("HoeffdingTree y HoeffdingTree adaptativo DDM y SingleClassifierDrift")
+    for i in range(1,31):
+        os.system('java -cp moa.jar -javaagent:sizeofag-1.0.4.jar moa.DoTask \
+                   "EvaluateInterleavedTestThenTrain -l (moa.classifiers.drift.SingleClassifierDrift -l trees.HoeffdingAdaptiveTree -d DDM) \
+                   -s (generators.RandomRBFGeneratorDrift -s 0.001 -k 3 -a 7 -n 3 -i '+str(i)+' -r '+str(i)+') -i 2000000" > DDM/HA/ha' + str(i)+'.csv')
+        os.system('java -cp moa.jar -javaagent:sizeofag-1.0.4.jar moa.DoTask \
+                   "EvaluateInterleavedTestThenTrain -l (moa.classifiers.drift.SingleClassifierDrift -l trees.HoeffdingTree -d DDM) \
+                   -s (generators.RandomRBFGeneratorDrift -s 0.001 -k 3 -a 7 -n 3 -i '+str(i)+' -r '+str(i)+') -i 2000000" > DDM/HNA/hna' + str(i)+'.csv')
 
 #EjercicioOffline(False)
 #EjercicioOffline(True)
 #EvaluacionEjercicioOffline()
 #EjercicioOnline()
-EvaluacionEjercicioOnline('onlineCDol/HA','onlineCDol/HNA')
+#EvaluacionEjercicioOnline('onlineCDol/HA','onlineCDol/HNA')
 #EjercicioOnlineCD()
 #EjercicioOnlineCDOlvido()
+#EjercicioDDM()
+EvaluacionEjercicioOnline('DDM/HA','DDM/HNA')

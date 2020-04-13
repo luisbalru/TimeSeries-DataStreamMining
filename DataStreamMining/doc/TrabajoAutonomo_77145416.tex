@@ -64,7 +64,7 @@
 
 \subsubsection{Entrenamiento de un clasificador HoeffdingTree estacionario con generador WaveFormGenerator y varias semillas en entrenamiento. HoeffdingTree adaptativo}
 
-Para enfrentar este problema, escribo un pequeño script con la ejecución en línea de órdenes de las sentencias necesarias para evaluar y entrenar un clasificador HoeffdingTree estacionario en primer lugar, y luego un HoeffdingTree adaptativo. Se hacen 30 ejecuciones por cada experimento propuesto, variando la semilla de entrenamiento entre 4 y 34
+Para enfrentar este problema, escribo un pequeño script con la ejecución en línea de órdenes de las sentencias necesarias para evaluar y entrenar un clasificador HoeffdingTree estacionario en primer lugar, y luego un HoeffdingTree adaptativo, que usa ADWIN para monitorizar el rendimiento de las ramas del árbol y las reemplaza por nuevas ramas cuando su precisión decrece y la de la nueva rama es superior (\cite{HA}). Se hacen 30 ejecuciones por cada experimento propuesto, variando la semilla de entrenamiento entre 4 y 34
 
 \begin{figure}[H] %con el [H] le obligamos a situar aquí la figura
 	\centering
@@ -92,7 +92,7 @@ dando lugar a la siguiente tabla de datos:
 
 \subsubsection{¿Cree que algún clasificador es significativamente mejor que el otro?}
 
-A priori, revisando la tabla de resultados, no parece haber gran diferencia entre los dos clasificadores. Sin embargo, para asegurar la respuesta, es necesario aplicar una serie de test estadísticos: En primer lugar, el test de Shapiro-Wilk para comprobar la normalidad de las muestras, en este caso, de los resultados de la precisión. Si las muestras son normales, se aplica el test paramétrico t-test para ver si son significativamente distintas o no. Si no lo son, es necesario calcular la media de cada muestra para ver cuál es mayor. En el caso de no normalidad, debemos acudir a un test no paramétrico, como es el de Test U de Mann-Whitney para comprobar la diferencia entre las muestras. Si, siendo diferentes, alguna de ellas (o ambas) no siguen una distribución normal, calculamos la mediana en vez de la media para hacer la comparación. Para hacer todos estos cálculos, de aquí en adelante utilizo la siguiente función:
+A priori, revisando la tabla de resultados, no parece haber gran diferencia entre los dos clasificadores. Sin embargo, para asegurar la respuesta, es necesario aplicar una serie de test estadísticos: En primer lugar, el test de Shapiro-Wilk para comprobar la normalidad de las muestras, en este caso, de los resultados de la precisión. Si las muestras son normales, se aplica el test paramétrico t-test para ver si son significativamente distintas o no. Si no lo son, es necesario calcular la media de cada muestra para ver cuál es mayor. En el caso de no normalidad, debemos acudir a un test no paramétrico, como es el de Test U de Mann-Whitney (\cite{umw}) para comprobar la diferencia entre las muestras. Si, siendo diferentes, alguna de ellas (o ambas) no siguen una distribución normal, calculamos la mediana en vez de la media para hacer la comparación. Para hacer todos estos cálculos, de aquí en adelante utilizo la siguiente función:
 
 \begin{figure}[H] %con el [H] le obligamos a situar aquí la figura
 	\centering
@@ -167,7 +167,7 @@ El p-valor del t-test es menor que 0.05, por lo que rechazamos la hipótesis de 
 
 \subsection{Entrenamiento online en datos con concept drift}
 
-Para el entrenamiento online, sobre el método InterleavedTestThenTrain, con HoeffdingTree y la configuración indicada del generador RandomRBFGeneratorDrift, planteo la siguiente orden en la interfaz gráfica de MOA:
+Para el entrenamiento online, sobre el método InterleavedTestThenTrain, con HoeffdingTree y la configuración indicada del generador RandomRBFGeneratorDrift, un algoritmo que genera un flujo con con cambio basado en funciones aleatorias de base radial, de forma que el cambio de concepto se introduce moviendo los centroides a velocidad constante (\cite{moa-manual}). Planteo la siguiente orden en la interfaz gráfica de MOA:
 
 \textit{EvaluateInterleavedTestThenTrain -l trees.HoeffdingTree -s (generators.RandomRBFGeneratorDrift -s 0.001 -k 3 -a 7 -n 3) -i 2000000}
 
@@ -248,7 +248,7 @@ y las siguientes medidas
 	\label{fig:measure41}
 \end{figure}
 
-mejorando aún más los resultados que en el ConceptDrift anterior. Si ahora nos centramos en el HoeffdingTree
+mejorando aún más los resultados que en el ConceptDrift anterior, ya que se va adaptando muy bien a los nuevos conceptos, dejando atrás los anteriores. Si ahora nos centramos en el HoeffdingTree
 
 \textit{EvaluatePrequential -l trees.HoeffdingTree -s (generators.RandomRBFGeneratorDrift -s 0.001 -k 3 -a 7 -n 3) -i 2000000 -w 1000}
 
@@ -268,7 +268,7 @@ vemos a través de su gráfica y sus medidas que los resultados no son tan bueno
 	\label{fig:measure42}
 \end{figure}
 
-Vemos en la gráfica que, para cada cambio de concepto, el clasificador tiene una bajada en rendimiento y vuelve a subir, pero desde luego los resultados son los peores hasta el momento.
+Vemos en la gráfica que, para cada cambio de concepto, el clasificador tiene una bajada en rendimiento y vuelve a subir, pero desde luego los resultados son los peores hasta el momento. El motivo es que, como el algoritmo no es adaptativo, siempre tiene en cuenta todas las instancias que le llegaron hasta el momento. Como la generación está basada en cambio de concepto con olvido, cada vez que se introduce uno nuevo el rendimiento del clasificador cae en picado hasta que consigue introducir ese concepto, acoplado a los anteriores, por lo que el rendimiento vuelve a mejorar hasta que se introduce el nuevo concepto.
 
 Tras 30 ejecuciones con semillas distintas, siguiendo la misma metodología que en las anteriores secciones, obtenemos los siguientes resultados:
 
@@ -280,11 +280,61 @@ Tras 30 ejecuciones con semillas distintas, siguiendo la misma metodología que 
 \end{figure}
 
 Como se puede ver, según el test U de Mann-Whitney, rechazamos la hipótesis de que los clasificadores sean equivalentes, por lo que hay diferencias significativas a favor del HoeffdingAdaptiveTree.
+
 \subsection{Entrenamiento online en datos con concept drift, incluyendo mecanismos para reiniciar modelos tras la detección de cambios de concepto}
 
+Empezamos esta última sección entrenando el clasificador HoeffdingTree con DDM mediante la siguiente orden:
+
+\textit{EvaluateInterleavedTestThenTrain -l (moa.classifiers.drift.SingleClassifierDrift -l trees.HoeffdingTree -d DDM) -s (generators.RandomRBFGeneratorDrift -s 0.001 -k 3 -a 7 -n 3) -i 2000000}
+
+Al ejecutarla en la interfaz de MOA, encontramos en su gráfica que el rendimiento es muy estable y en torno al 97\% en precisión.
+
+\begin{figure}[H] %con el [H] le obligamos a situar aquí la figura
+	\centering
+	\includegraphics[scale=0.5]{graph51.png}  %el parámetro scale permite agrandar o achicar la imagen. En el nombre de archivo puede especificar directorios
+	\caption{Curva de rendimiento para HoeffdingTree con DDM} 
+	\label{fig:graph51}
+\end{figure}
+
+Lo confirmamos en la tabla de medidas, con un accuracy medio del 97.3\% y un estadístico Kappa 94.60:
+
+\begin{figure}[H] %con el [H] le obligamos a situar aquí la figura
+	\centering
+	\includegraphics[scale=0.5]{measures51.png}  %el parámetro scale permite agrandar o achicar la imagen. En el nombre de archivo puede especificar directorios
+	\caption{Medidas de rendimiento para HoeffdingTree con DDM} 
+	\label{fig:measure51}
+\end{figure}
 
 
+Pasamos ahora al clasificador HoeffdingAdaptiveTree, que ejecuto con la siguiente orden:
 
+\textit{EvaluateInterleavedTestThenTrain -l (moa.classifiers.drift.SingleClassifierDrift -l trees.HoeffdingAdaptiveTree -d DDM) -s (generators.RandomRBFGeneratorDrift -s 0.001 -k 3 -a 7 -n 3) -i 2000000}
+
+Como vemos en su gráfica y en la tabla de resultados, el rendimiento es algo menor pero igualmente estable conforme se van  añadiendo nuevos datos. Ninguno de los clasificadores se ve afectado por los cambios de concepto.
+
+\begin{figure}[H] %con el [H] le obligamos a situar aquí la figura
+	\centering
+	\includegraphics[scale=0.5]{graph52.png}  %el parámetro scale permite agrandar o achicar la imagen. En el nombre de archivo puede especificar directorios
+	\caption{Curva de rendimiento para HoeffdingAdaptiveTree con DDM} 
+	\label{fig:graph52}
+\end{figure}
+
+\begin{figure}[H] %con el [H] le obligamos a situar aquí la figura
+	\centering
+	\includegraphics[scale=0.5]{measures52.png}  %el parámetro scale permite agrandar o achicar la imagen. En el nombre de archivo puede especificar directorios
+	\caption{Medidas de rendimiento para HoeffdingAdaptiveTree con DDM} 
+	\label{fig:measure52}
+\end{figure}
+
+Como los resultados han sido muy similares, evaluamos estadísticamente si hay diferencias significativas. Para ello, procedo de la misma manera que en las secciones anteriores. Como se verá, el test U de Mann-Whitney nos arroja un p-valor de 
+0.32602181120031787 > 0.05, por lo que no podemos rechazar la hipótesis de que las dos poblaciones de resultados, fruto de 30 ejecuciones con semillas distintas, sean iguales. En este caso, ambos algoritmos tienen un rendimiento sin diferencias significativas.
+
+\begin{figure}[H] %con el [H] le obligamos a situar aquí la figura
+	\centering
+	\includegraphics[scale=0.5]{test5.png}  %el parámetro scale permite agrandar o achicar la imagen. En el nombre de archivo puede especificar directorios
+	\caption{Test de diferencias con DDM} 
+	\label{fig:test5}
+\end{figure}
 \newpage
 \section{Bibliografía}
 
