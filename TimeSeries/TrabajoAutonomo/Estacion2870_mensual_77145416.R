@@ -5,7 +5,7 @@
 # setwd("~/Documentos/Master/TimeSeries-DataStreamMining/TimeSeries/TrabajoAutonomo")
 
 NPred = 2 # Valores a predecir
-NTest = 2 # Valores para test
+NTest = 8 # Valores para test
 
 library(tseries)
 

@@ -11,7 +11,7 @@ NTest = 7 # Valores para test
 
 serie = scan('./data/Estacion2870_diaria.txt')
 
-serie.ts = ts(serie)
+serie.ts = ts(serie,frequency = 60)
 plot(decompose(serie.ts))
 
 # Como se puede ver, no hay una tendencia clara pero sí una estacionalidad, que se mantiene en un rango fijo
