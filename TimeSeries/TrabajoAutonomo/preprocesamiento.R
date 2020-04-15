@@ -59,7 +59,7 @@ vector_extremo= data2$Tmax > extremo.s.extremo | data2$Tmax < extremo.l.extremo
 # Transformación a serie temporal DIARIA
 library(tseries)
 d=data[298:1754,]
-serie.ts = ts(d$Tmax,frequency = 365)
+serie.ts = ts(data$Tmax,frequency = 365)
 
 ######################################################################
 # Valores perdidos. 

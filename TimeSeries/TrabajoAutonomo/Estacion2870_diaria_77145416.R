@@ -6,12 +6,12 @@
 
 library(tseries)
 
-NPred = 31 # Valores a predecir
-NTest = 364 # Valores para test
+NPred = 7 # Valores a predecir
+NTest = 7 # Valores para test
 
 serie = scan('./data/Estacion2870_diaria.txt')
 
-serie.ts = ts(serie,frequency = 364)
+serie.ts = ts(serie)
 plot(decompose(serie.ts))
 
 # Como se puede ver, no hay una tendencia clara pero sí una estacionalidad, que se mantiene en un rango fijo
@@ -37,7 +37,7 @@ lines(tiempoTs,serieTs,col='red')
 # Es vital conocer el periodo para tratar la estacionalidad. Como poseemos un dato por día, establecemos el periodo en 
 # 364 (para solucionar el desajuste por año bisiesto, falta de días en algunos años,etc), es decir, el mismo día del año anterior.
 acf(serieTr)
-k = 364
+k = 365
 estacionalidad.H1 = decompose(serie.ts)$seasonal[(k+1):(2*k)]
 
 # Tenemos 3 periodos de estacionalidad (3 años)

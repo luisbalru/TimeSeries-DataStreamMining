@@ -13,7 +13,7 @@
 \normalfont \normalsize 
 \textsc{\textbf{Series Temporales y Minería de Flujos de Datos (2019-2020)} \\ Máster Oficial Universitario en Ciencia de Datos e Ingeniería de Computadores \\ Universidad de Granada} \\ [25pt] % Your university, school and/or department name(s)
 \horrule{0.5pt} \\[0.4cm] % Thin top horizontal rule
-\huge Minería de Flujos de Datos. Trabajo Autónomo \\ % The assignment title
+\huge Trabajo Autónomo II: Minería de Flujos de Datos \\ % The assignment title
 \horrule{2pt} \\[0.5cm] % Thick bottom horizontal rule
 }
 
@@ -37,9 +37,6 @@
 
 \listoffigures
 
-\listoftables
-
-\newpage
 
 %
 %\begin{figure}[H] %con el [H] le obligamos a situar aquí la figura
@@ -61,8 +58,39 @@
 \end{figure}
 \subsection{Problema de clasificación}
 
+La clasificación en minería de flujo de datos es una extensión del enfoque tradicional en el que los datos no se conocen todos de partida, sino que van llegando paulatinamente. En un principio se abordó como un problema de aprendizaje incremental, por ejemplo, con los árboles de decisión tipo Hoeffding, englobados en los VFDT (Very Fast Decision Tree) para casos discretos o VFML, VFDTc, Quantile Summaries o Aproximaciones Gaussianas en el caso continuo. En comparación con algoritmos clásicos como C4.5, el rendimiento es mucho mayor, siendo capaces de procesar, en el caso de VFDT, hasta 1.6 millones de datos en 20 minutos, frente a las 24h necesarias para C4.5. Centrándonos en los dos clasificadores utilizados en la sección 2 de prácticas, HoeffdingTree y HoeffdingAdaptiveTree, podemos decir que HoeffdingTree es un árbol de decisión incremental capaz diseñdo para aprender de flujos de datos masivos, asumiendo que la distribución de los datos no cambia a lo largo del tiempo. Se aprovecha del hecho de que una muestra pequeña puede ser suficiente para aprender cómo separar un atributo de forma óptima. Esta idea se soporta en la cota de Hoeffding, que establece que, con una certeza de $1-\delta$, la media verdadera de una variable aleatoria de rango R no difiere de la media estimada después de $n$ observaciones independientes por más que
+$$\epsilon = \sqrt{\frac{R^2 ln(1/\delta)}{2n}}$$
+
+Por su parte, HoeffdingAdaptiveTree usa ADWIN (Adapting Slide Window, un tipo de detector de Concept Drift) para monitorizar el rendimiento de las ramas del árbol y reemplazarlas por otras nuevas cuando su precisión decrezca y si las nuevas  sean más precisas. \\
+
+Sin embargo, sólo se consideran algoritmos de clasificación en flujo de datos cuando, a parte de lo ya comentado, si cada dato se analiza una sola vez y en el momento en el que se recibe. A diferencia del aprendizaje incremental, la minería de flujo de datos concibe la posibilidad de un cambio de concepto durante la llegada de nuevos datos, pudiendo ser incluso datos contradictorios respecto de los que antes se recibieron. Los algoritmos deben identificar y adaptarse a los nuevos datos que van recibiendo (lo que se llama cambio de concepto y tratamos en la siguiente sección). Además, es necesario definir una forma de evaluación del rendimiento de la clasificación. Surge Holdout, basado en la clasificación tradicional, en la que se entrena el modelo sobre unos datos y se evalúa sobre la partición de test. Sin embargo, sólo es válido si el conjunto de test es similar a los datos de entrenamiento actuales. Si se diera un cambio de concepto, este método no sería útil. En consecuencia, es necesario utilizar métodos en los que cada ejemplo individual se usa primero para probar el modelo antes de usarlo para entrenarlo. Cuando la evaluación se realiza intencionadamente en este orden, el modelo siempre se está probando en casos que no ha visto, por lo que no se necesita conjunto de prueba y se entrena sobre el máximo número de elementos posibles. Surgen dos alternativas: la primera, llamada test-then-train, utiliza todos los ejemplos vistos hasta el presente para calcular la precisión. La segunda, prequential, sólo considera los más recientes utilizando una ventana deslizante o factor de decaimiento.  
+
+
 \subsection{Concept Drift}
 
+El corazón de la minería de flujo de datos, también si nos centramos en clasificación, es que los datos pueden ir variando a lo largo del tiempo. Por tanto, los clasificadores deben ser robustos ante cambios y capaces de adaptarse para seguir haciendo buenas predicciones. La detección de esos cambios, llamados concept drift, se ha dividido en cuatro bloques:
+
+\begin{itemize}
+	\item \textbf{Aprendizaje online.} Familia de algoritmos que continuamente actualizan los parámetros del clasificador mientras procesan los datos que van llegando. No todos los clasificadores pueden ejercer un aprendizaje online ya que los datos sólo se pueden visitar una vez, las limitaciones en memoria y procesamiento son independientes de la cantidad de datos procesada y el aprendizaje se puede para en el cualquier momento, no siendo peor que un clasificador entrenado offline con los datos hasta el momento. CVFDT es un ejemplo de VFDT con cambio de concepto
+	\item \textbf{CD mediante ventana.} Incorporan mecanismos para olvidar datos antiguos, haciendo que los recientemente llegados sean más relevantes porque contienen características del contexto actual. 
+	\item \textbf{CD mediante ensemble.} Incorporan conjuntos de clasificadores elementales, combinando sus salidas y generando una decisión colectiva que puede incrementar la precisión porque el conocimiento es distribuido y, por tanto, más exhaustivo. Por contra, es necesario un abanico de clasificadores diversos. Los enfoques pioneros, ambos con un número fijo de clasificadores que se van sustituyendo en función de la precisión, son SEA (usando voto por mayoría) y AWE (voto ponderado más sofisticado).
+\end{itemize}
+
+Otro enfoque, en el que se evita adaptar el proceso de aprendizaje, es detectar cuándo se produce el CD y actuar, reconociendo así los cambios en los flujos de datos no estacionarios de manera precisa y oportuna. Uno de ellos es el método de detección de cambio (DDM (\cite{ddm})) que controla el número de errores producidos por el modelo de aprendizaje durante la predicción. Compara las estadísticas de dos ventanas: la primera contiene todos los datos y la segunda sólo los datos desde el principio hasta que el número de errores aumenta. Se considera que el número de errores en una muestra se modela a través de una distribución binomial. Un aumento significante en el error del algoritmo sugiere que la distribución de la clase está cambiando y, por tanto, el modelo actual es inapropiado. Definen un nivel de precaución y un nivel de cambio que se van evaluando y se actúa en consecuencia. Se actúa de la siguiente manera (\cite{moa-manual}, \cite{ddm}). Para cada punto $i$ de la muestra, el error es la probabilidad de clasificación errónea $p_i$, con una desviación estándar dada por $s_i = \sqrt{p_i (1-p_i)/i}$. Se almacenan los valores de $p_i$ y $s_i$ cuando $p_i+s_i$ alcanza su mínimo valor durante el proceso ($p_{min}$ y $s_{min}$). A partir de ese momento,
+
+\begin{itemize}
+	\item Nivel de precaución: $p_i + s_i \geq p_{min} + 2 s_{min}$
+	\item Nivel de cambio: $p_i + s_i \geq p_{min} + 3 s_{min}$
+\end{itemize} 
+
+
+También existen propuestas basadas en ventana, como ADWIN (ya comentado antes, en HoeffdingAdaptiveTree), en el que se definen, dada una ventana, dos subventanas lo suficientemente grandes y con medias distintas, para así poder concluir que los valores esperados son diferentes y se pueda eliminar la parte antigua de la ventana. \\
+
+Un inconveniente importante de la detección del CD es la eficiencia. Monitorizar el rendimiento del algoritmo de aprendizaje ralentiza el proceso, siendo así incapaces de abordar problemas que requieren una respuesta muy rápida ante volúmenes de datos muy grandes. En consecuencia, surge el algoritmo HSP (\cite{hsp}) de detección de CD. \\
+
+Sin embargo, la clasificación en flujo de datos es controvertida porque se requiere siempre de un oráculo de forma que cada tupla sea etiquetada. Siendo así, no parece muy interesante entrenar un modelo ya que el oráculo, que siempre está, puede hacer el trabajo del modelo quizá con mayor precisión dada su condición de experto. Además, se requiere que los algoritmos sean muy eficientes ya que deben leer los datos una sola vez y no son almacenados, mientras que el proceso de etiquetado es costoso y resta mucha eficiencia. Todo ello hace que la clasificación, a pesar de su popularidad, no parezca la técnica más idónea dentro de la minería de flujo de datos. \\
+
+Nota: La mayoría de la información aquí recogida es resumen de la documentación dada en clase (\cite{apuntes}).
 \newpage
 \section{Prácticas}
 
