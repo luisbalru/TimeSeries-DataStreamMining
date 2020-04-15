@@ -85,41 +85,41 @@ plot(decompose(imp2))
 
 # Los plots me hacen pensar que la imputación más realista es la de Seasplit, ya que en la franja donde hay más valores perdidos 
 # la hace con cierta irregularidad y no como una línea recta (Kalman)
+data$Tmax = imp2
+diaria = data %>% filter(Month=='02' | Month=='03')
 
-write.table(imp2,file='./data/Estacion2870_diaria.txt', sep='\t',row.names = F, col.names = F)
+
+write.table(diaria$Tmax,file='./data/Estacion2870_diaria.txt', sep='\t',row.names = F, col.names = F)
 
 ########################################################################
 # Transformación a serie temporal mensual
 # Recupero la imputación de datos sobre el dataset original
-d$Tmax = imp2
-serie_mes = c(1:48)
 
-meses1 = c('03','04','05','06','07','08','09','10','11','12')
+serie_mes = c(1:58)
+
+meses1 = c('06','07','08','09','10','11','12')
 mesesn = c('01','02')
 meses = c('01','02','03','04','05','06','07','08','09','10','11','12')
-anios = c(2015,2016,2017)
+anios = c(2014,2015,2016,2017)
 
+# Mayo de 2013
+serie_mes[1] = mean((data %>% filter(Month=='05',Year==2013))$Tmax)
 
-cont = 1
+cont = 2
 for(i in meses1){
-  serie_mes[cont] = mean((d %>% filter(Month==i,Year==2014))$Tmax)
+  serie_mes[cont] = 0.8*mean((data %>% filter(Month==i,Year==2013))$Tmax)+0.2*serie_mes[cont-1]
   cont = cont+1
 }
 
 for(i in anios){
   for(j in meses){
-    if(cont <= 12){
-      serie_mes[cont] = mean((d %>% filter(Month==j,Year==i))$Tmax)
-    }
-    else{
-      serie_mes[cont] =  0.8*mean((d %>% filter(Month==j,Year==i))$Tmax)+0.2*serie_mes[cont-12]
-    }
+    serie_mes[cont] =  0.8*mean((data %>% filter(Month==j,Year==i))$Tmax)+0.2*serie_mes[cont-1]
     cont = cont+1
   }
 }
 
 for(i in mesesn){
-  serie_mes[cont] = 0.8*mean((d %>% filter(Month==i,Year==2018))$Tmax)+0.2*serie_mes[cont-12]
+  serie_mes[cont] = 0.8*mean((data %>% filter(Month==i,Year==2018))$Tmax)+0.2*serie_mes[cont-1]
   cont = cont+1
 }
 
