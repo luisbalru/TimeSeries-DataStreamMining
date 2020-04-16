@@ -165,4 +165,42 @@ hist(modelo_ma.H1$residuals, col='blue', prob=T, ylim=c(0,1), xlim=c(-2,2))
 lines(density(modelo_ma.H1$residuals))
 
 
+#############################################################################
+# SELECCIÓN DEL MEJOR MODELO
+
+# MSE
+library(scorer)
+# MODELO AR
+mean_squared_error(serieTr.SinTendEstC.H1, valoresAjustados1.H1)
+mean_squared_error(serieTs.SinTendEstC.H1, valoresPredichos1.H1)
+
+# El MSE en entrenamiento es 0.8920383 y en test 5.480675
+
+# MODELO MA
+
+mean_squared_error(serieTr.SinTendEstC.H1, valoresAjustados2.H1)
+mean_squared_error(serieTs.SinTendEstC.H1, valoresPredichos2.H1)
+# El MSE en entrenamiento es 0.862258 y en test 2.286113
+
+
+# A continuación, con el criterio de información de Akaike confirmamos estos resultados y escogemos finalmente un modelo para 
+# predecir.
+
+
+# AIC = 2k +nLog(RSS/n)
+# k = grados de libertad; n = numero de datos; RSS = mua de los errores al cuadrado
+
+AIC(modelo_arima.H1,modelo_ma.H1)
+
+# Hemos visto que el modelo basado en medias móviles tiene mejor MSE tanto en train como 
+# en test. Ahora, el criterio de información de Akaike muestra que para el mismo número 
+# de parámetros, el modelo MA tiene menor AIC, luego es más conveniente.
+
+#############################################################################
+# PREDICCIÓN CON EL MODELO MÁS FAVORABLE SEGÚN AIC
+
+# Una vez validado el modelo, generamos la predicción para los datos de Marzo y Abril
+# de 2018. Para ello, debemos deshacer todos los cambios # sobre el conjunto de datos 
+# para así recuperar la serie temporal original. Es decir, deshacer la diferenciación, 
+# devolver la estacionalidad y la media.
 
