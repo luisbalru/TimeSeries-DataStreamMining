@@ -126,3 +126,23 @@ for(i in mesesn){
 serie.mes = ts(serie_mes,frequency=12)
 plot(decompose(serie.mes))
 write.table(serie.mes,file='./data/Estacion2870_mensual.txt', sep='\t',row.names = F,col.names = F)
+
+
+##############################################################################
+# PREDICCIONES
+
+preds = read.csv('./data/Estacion2870_pred.csv', header=T, sep=',')
+preds$Fecha = as.Date(preds$FECHA)
+preds$Year = substring(preds$FECHA, 7,10)
+preds$Month = substring(preds$FECHA,4,5)
+
+
+# Mensual
+pred_mensual = 1:2
+pred_mensual[1] = 0.8*mean((preds %>% filter(Month == '03'))$Maxima)+0.2*serie[58]
+pred_mensual[2] = 0.8*mean((preds %>% filter(Month == '04'))$Maxima)+0.2*pred_mensual[1]
+write.table(pred_mensual,file='./data/real-mensual.txt',sep='\t',row.names = F,col.names = F)
+
+# Diaria
+pred_diaria = (preds %>% filter(Month=='03'))$Maxima[1:7]
+write.table(pred_diaria,file='./data/real-diario.txt',sep='\t',row.names = F, col.names = F)

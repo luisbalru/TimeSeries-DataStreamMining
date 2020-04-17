@@ -146,7 +146,7 @@ lines(tiempoTs, valoresPredichos2.H1,col='blue')
 # sesgo, la normalidad de los residuos, para garantizar que la serie temporal ha sido modelada correctamente
 # (Test de Jarque Bera y Shapiro-Wilk) y realizar una confirmación gráfica
 
-# MODELO AR(4)
+# MODELO AR
 boxtestM1 = Box.test(modelo_arima.H1$residuals) # pvalue 0.5577 --> aleatoriedad
 JB.H1 = jarque.bera.test(modelo_arima.H1$residuals) # pvalue 0.5472 --> normal
 SW.H1 = shapiro.test(modelo_arima.H1$residuals) # pvalue 0.57--> normal
@@ -155,7 +155,7 @@ SW.H1 = shapiro.test(modelo_arima.H1$residuals) # pvalue 0.57--> normal
 hist(modelo_arima.H1$residuals, col='blue', prob=T, ylim=c(0,1), xlim=c(-2,2))
 lines(density(modelo_arima.H1$residuals))
 
-# MODELO MA(1) --> cumple los tests estadísticos
+# MODELO MA --> cumple los tests estadísticos
 boxtestM2 = Box.test(modelo_ma.H1$residuals) # pvalue 0.9391 --> aleatoriedad
 JB2.H1 = jarque.bera.test(modelo_ma.H1$residuals) # pvalue 0.6982 --> normal
 SW2.H1 = shapiro.test(modelo_ma.H1$residuals) # pvalue 0.772--> normal
@@ -200,7 +200,59 @@ AIC(modelo_arima.H1,modelo_ma.H1)
 # PREDICCIÓN CON EL MODELO MÁS FAVORABLE SEGÚN AIC
 
 # Una vez validado el modelo, generamos la predicción para los datos de Marzo y Abril
-# de 2018. Para ello, debemos deshacer todos los cambios # sobre el conjunto de datos 
+# de 2018. Para ello, debemos deshacer todos los cambios sobre el conjunto de datos 
 # para así recuperar la serie temporal original. Es decir, deshacer la diferenciación, 
 # devolver la estacionalidad y la media.
 
+# Partimos de la serie original y le restamos la estacionalidad
+serieEntera = serie.ts
+tiempo = 1:length(serieEntera)
+
+aux = ts(serieEntera, frequency=12)
+aux = decompose(aux)$seasonal
+estacionalidad = as.numeric(aux[1:12])
+aux = rep(estacionalidad, round(length(serieEntera)/length(estacionalidad)))
+serieSinEst = serieEntera - aux[1:58]
+
+# Ajustamos un modelo ARIMA medias móviles Vimos que para asegurar la estacionaridad 
+# necesitábamos diferenciar una vez, por lo que indicamos d=1. Además, según el ACF,
+# el último valor distinto de 0 es el 3
+
+# Centramos la serie previamente en el 0
+serieSinEstC = serieSinEst - mean(serieSinEst)
+
+modelo = arima(serieSinEstC,order=c(0,1,3))
+# Generamos los valores ajustados (en entrenamiento)
+valoresAjustados = serieSinEstC + modelo$residuals
+# Y las predicciones sobre los dos meses
+Predicciones = predict(modelo, n.ahead=2)
+valoresPredichos = Predicciones$pred
+
+# Devolvemos la media eliminada antes del modelo para así recuperar la referencia real
+valoresAjustados = valoresAjustados + mean(serieSinEst)
+valoresPredichos = valoresPredichos + mean(serieSinEst)
+
+# A continuación, devolvemos la estacionalidad tanto a los valores ajustados como predichos
+valoresAjustados = valoresAjustados + aux[1:58] 
+valoresPredichos = valoresPredichos + estacionalidad[10:11]
+
+# Alargamos el tiempo para incluir la predicción
+tiempoPred = (tiempo[length(tiempo)]+(1:2))
+valoresAjustados = as.numeric(valoresAjustados)
+valoresPredichos = as.numeric(valoresPredichos)
+# Representamos los valores ajustados y predichos de la serie original
+plot.ts(serie,xlim=c(1,max(tiempoPred)),ylim=c(1,40))
+lines(valoresAjustados, col='blue')
+lines(59:60,valoresPredichos, col='red')
+
+# Hasta aquí llegaría nuestro estudio si no tuviéramos los datos reales del año 1960. En este caso sí los tenemos, por lo que 
+# podemos comprobar cuán bueno ha sido nuestro ajuste. 
+
+# Cargamos los valores reales de predicción para comparar con lo predicho
+predReales = scan('./data/real-mensual.txt')
+lines(59:60,predReales,col='green')
+# Sobre la gráfica anterior, en verde, representamos los verdaderos valores y a simple vista parecen ajustarse bastante bien.
+
+# Evaluémos el error cuadrático medio cometido entre los valores reales y los predichos.
+mse_prediccion = mean_squared_error(predReales,valoresPredichos)
+# 0.907640594619933 de mse
