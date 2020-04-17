@@ -29,7 +29,7 @@ plot.ts(serieTr, xlim=c(1,tiempoTs[length(tiempoTs)]))
 lines(tiempoTs,serieTs,col='red')
 
 # A continuación, tratamos de estudiar la estacionaridad. Para ello, debemos eliminar previamente la tendencia y la estacionalidad.
-# En este caso, aplicando la metodología Box-Jenkins vemos que no parece haber tendencia, luego nos centramos en la estacionalidad.
+# En este caso, aplicando la metodología Box-Jenkins vemos que no parece haber tendencia.
 
 #############################################################################################
 # ELIMINACIÓN DE LA ESTACIONALIDAD
@@ -37,7 +37,7 @@ lines(tiempoTs,serieTs,col='red')
 # Es vital conocer el periodo para tratar la estacionalidad. Como poseemos un dato por día, establecemos el periodo en 
 # 364 (para solucionar el desajuste por año bisiesto, falta de días en algunos años,etc), es decir, el mismo día del año anterior.
 acf(serieTr)
-k = 365
+k = 60
 estacionalidad.H1 = decompose(serie.ts)$seasonal[(k+1):(2*k)]
 
 # Tenemos 3 periodos de estacionalidad (3 años)
