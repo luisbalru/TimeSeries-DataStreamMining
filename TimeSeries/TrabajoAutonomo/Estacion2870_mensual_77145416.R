@@ -99,7 +99,7 @@ pacf(serieTr.SinTendEstDiff.H1)
 # que nuestro modelo AR sería ARIMA(3,0,1) y luego deshacer la diferenciación integrando. Por comodidad, optamos por el enfoque
 # planteado arriba (ARIMA(3,1,0)) para que sea el modelo quien haga la integración de forma automática.
 
-# Para que el modelo ARIMA funcione bien, es necesario que la serie esté centrada en el cer
+# Para que el modelo ARIMA funcione bien, es necesario que la serie esté centrada en el cero
 # por lo que le resto la media
 serieTr.SinTendEstC.H1 = serieTr.SinTendEst.H1 - mean(serieTr.SinTendEst.H1)
 serieTs.SinTendEstC.H1 = serieTs.SinTendEst.H1 - mean(serieTs.SinTendEst.H1)
