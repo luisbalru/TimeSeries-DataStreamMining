@@ -54,7 +54,7 @@ lines(tiempoTs, serieTs.SinEst.H1, col='red')
 # Obteniendo la serie sin estacionalidad
 
 #############################################################################################
-# ESTACIONARIDAD
+# ESTACIONARIEDAD
 
 # Visualizando ACF y encontrando que tiende a 0 muy rápidamente, podríamos pensar que es estacionaria
 acf(serieTr.SinEst.H1) # Nos aseguramos con el test de Dickey-Fuller
@@ -116,6 +116,23 @@ lines(valoresAjustados1.H1,col='blue')
 lines(tiempoTs[1:6],serieTs.SinTendEstC.H1,col='red')
 lines(tiempoTs[1:6], valoresPredichos1.H1[1:6],col='blue')
 
+# AR(2)
+
+modelo_arima_ar2.H1 = arima(serieTr.SinTendEstC.H1, order=c(2,1,0))
+valoresAjustados4.H1 = serieTr.SinTendEstC.H1 + modelo_arima_ar2.H1$residuals
+
+# Predicciones
+Predicciones4.H1 = predict(modelo_arima_ar2.H1,n.ahead=NPred)
+valoresPredichos4.H1 = Predicciones4.H1$pred
+
+# Error cuadrático acumulado del ajuste en entrenamiento y test
+errorTr4.H1 = sum((modelo_arima_ar2.H1$residuals)^2)
+errorTs4.H1 = sum((valoresPredichos4.H1[1:6] - serieTs.SinTendEstC.H1)^2)
+
+plot.ts(serieTr.SinTendEstC.H1, xlim=c(1,tiempoTs[length(tiempoTs)]))
+lines(valoresAjustados4.H1,col='blue')
+lines(tiempoTs[1:6],serieTs.SinTendEstC.H1,col='red')
+lines(tiempoTs[1:6], valoresPredichos4.H1[1:6],col='blue')
 
 # MODELO MA
 
@@ -153,9 +170,6 @@ lines(valoresAjustados3.H1,col='blue')
 lines(tiempoTs[1:6],serieTs.SinTendEstC.H1,col='red')
 lines(tiempoTs, valoresPredichos3.H1,col='blue')
 
-# Se podrían intentar más modelos, pero la autocorrelación para valores de q = 2,4,5, a pesar de 
-# ser mayores que 0, apenas sobrepasan -0.1, por lo que son prácticamente ruido. De la misma manera
-# para p = 2, que casi llega a -0.2.
 
 ##############################################################################
 # VALIDACIÓN DE MODELOS
@@ -165,7 +179,7 @@ lines(tiempoTs, valoresPredichos3.H1,col='blue')
 # sesgo, la normalidad de los residuos, para garantizar que la serie temporal ha sido modelada correctamente
 # (Test de Jarque Bera y Shapiro-Wilk) y realizar una confirmación gráfica
 
-# MODELO AR
+# MODELO AR(7)
 boxtestM1 = Box.test(modelo_arima.H1$residuals) # pvalue 0.3367 --> aleatoriedad
 JB.H1 = jarque.bera.test(modelo_arima.H1$residuals) # pvalue 0.05231 > 0.05 --> normal (por poco)
 SW.H1 = shapiro.test(modelo_arima.H1$residuals) # pvalue 0.07556--> normal
@@ -174,7 +188,16 @@ SW.H1 = shapiro.test(modelo_arima.H1$residuals) # pvalue 0.07556--> normal
 hist(modelo_arima.H1$residuals, col='blue', prob=T, ylim=c(0,0.3), xlim=c(-10,10))
 lines(density(modelo_arima.H1$residuals))
 
-# MODELO MA --> no cumple los tests estadísticos
+# MODELO AR(2) --> cumple los tests
+boxtestM4 = Box.test(modelo_arima_ar2.H1$residuals) # pvalue 0.1096 --> aleatoriedad
+JB.H4 = jarque.bera.test(modelo_arima_ar2.H1$residuals) # pvalue 0.4949 > 0.05 --> normal
+SW.H4 = shapiro.test(modelo_arima_ar2.H1$residuals) # pvalue 0.7159--> normal
+
+# Gráficamente vemos que los residuos son correctos porque siguen una normal
+hist(modelo_arima_ar2.H1$residuals, col='blue', prob=T, ylim=c(0,0.3), xlim=c(-10,10))
+lines(density(modelo_arima_ar2.H1$residuals))
+
+# MODELO MA(7) --> no cumple los tests estadísticos
 boxtestM2 = Box.test(modelo_ma.H1$residuals) # pvalue 0.6301 --> aleatoriedad
 JB2.H1 = jarque.bera.test(modelo_ma.H1$residuals) # pvalue 0.01484 --> rechazamos la hipótesis de normalidad
 SW2.H1 = shapiro.test(modelo_ma.H1$residuals) # pvalue 0.009127--> rechazamos la hipótesis de normalidad
@@ -183,7 +206,103 @@ SW2.H1 = shapiro.test(modelo_ma.H1$residuals) # pvalue 0.009127--> rechazamos la
 hist(modelo_ma.H1$residuals, col='blue', prob=T, ylim=c(0,0.3), xlim=c(-10,10))
 lines(density(modelo_ma.H1$residuals))
 
-# MODELO MA --> NO cumple los tests estadísticos
+# MODELO MA(2) --> NO cumple los tests estadísticos
 boxtestM3 = Box.test(modelo_ma2.H1$residuals) # pvalue 0.6228 --> aleatoriedad
 JB3.H1 = jarque.bera.test(modelo_ma2.H1$residuals) # pvalue 0.02459 --> rechazamos la hipótesis de normalidad
 SW3.H1 = shapiro.test(modelo_ma2.H1$residuals) # pvalue 0.0089977--> rechazamos la hipótesis de normalidad
+
+
+# Los dos modelos basados en medias móviles NO cumplen los tests de normalidad sobre los residuos,
+# pero sí su aleatoriedad, por lo que debemos abandonarlos. Comparamos por tanto los modelos AR para
+# elegir cuál es el mejor
+
+#############################################################################
+# SELECCIÓN DEL MEJOR MODELO
+
+# MSE
+library(scorer)
+# MODELO AR
+mean_squared_error(serieTr.SinTendEstC.H1, valoresAjustados1.H1)
+mean_squared_error(serieTs.SinTendEstC.H1, valoresPredichos1.H1)
+
+# El MSE en entrenamiento es 8.862888 y en test 55.84348
+
+# MODELO MA
+
+mean_squared_error(serieTr.SinTendEstC.H1, valoresAjustados4.H1)
+mean_squared_error(serieTs.SinTendEstC.H1, valoresPredichos4.H1)
+# El MSE en entrenamiento es 11.62977 y en test 60.46596
+
+
+# A continuación, con el criterio de información de Akaike confirmamos estos resultados y escogemos finalmente un modelo para 
+# predecir.
+
+
+# AIC = 2k +nLog(RSS/n)
+# k = grados de libertad; n = numero de datos; RSS = mua de los errores al cuadrado
+
+AIC(modelo_arima.H1,modelo_arima_ar2.H1)
+
+# Vemos que el AR(7) tiene un menor coeficiente AIC, a pesar de que la complejidad del modelo es
+# superior. También el MSE es menor, por lo que elijo AR(7) sobre AR(2).
+
+#############################################################################
+# PREDICCIÓN CON EL MODELO MÁS FAVORABLE SEGÚN AIC
+
+# Una vez validado el modelo, generamos la predicción para los 7 primeros días de marzo
+# de 2018. Para ello, debemos deshacer todos los cambios sobre el conjunto de datos 
+# para así recuperar la serie temporal original. Es decir, deshacer la diferenciación, 
+# devolver la estacionalidad y la media.
+
+# Partimos de la serie original y le restamos la estacionalidad
+serieEntera = serie.ts
+tiempo = 1:length(serieEntera)
+
+aux = ts(serieEntera, frequency=60)
+aux = decompose(aux)$seasonal
+estacionalidad = as.numeric(aux[1:60])
+aux = rep(estacionalidad, 5)
+serieSinEst = serieEntera - aux[1:264]
+
+# Ajustamos un modelo ARIMA AR. Vimos que para asegurar la estacionaridad 
+# necesitábamos diferenciar una vez, por lo que indicamos d=1. Además, según el PACF,
+# el último valor distinto de 0 es el 7
+
+# Centramos la serie previamente en el 0
+serieSinEstC = serieSinEst - mean(serieSinEst)
+
+modelo = arima(serieSinEstC,order=c(7,1,0))
+# Generamos los valores ajustados (en entrenamiento)
+valoresAjustados = serieSinEstC + modelo$residuals
+# Y las predicciones sobre los dos meses
+Predicciones = predict(modelo, n.ahead=7)
+valoresPredichos = Predicciones$pred
+
+# Devolvemos la media eliminada antes del modelo para así recuperar la referencia real
+valoresAjustados = valoresAjustados + mean(serieSinEst)
+valoresPredichos = valoresPredichos + mean(serieSinEst)
+
+# A continuación, devolvemos la estacionalidad tanto a los valores ajustados como predichos
+valoresAjustados = valoresAjustados + aux[1:264] 
+valoresPredichos = valoresPredichos + estacionalidad[29:35]
+
+# Alargamos el tiempo para incluir la predicción
+tiempoPred = (tiempo[length(tiempo)]+(1:7))
+valoresAjustados = as.numeric(valoresAjustados)
+valoresPredichos = as.numeric(valoresPredichos)
+# Representamos los valores ajustados y predichos de la serie original
+plot.ts(serie,xlim=c(1,max(tiempoPred)),ylim=c(1,30))
+lines(valoresAjustados, col='blue')
+lines(265:271,valoresPredichos, col='red')
+
+# Hasta aquí llegaría nuestro estudio si no tuviéramos los datos reales del año 1960. En este caso sí los tenemos, por lo que 
+# podemos comprobar cuán bueno ha sido nuestro ajuste. 
+
+# Cargamos los valores reales de predicción para comparar con lo predicho
+predReales = scan('./data/real-diario.txt')
+lines(265:271,predReales,col='green')
+# Sobre la gráfica anterior, en verde, representamos los verdaderos valores y a simple vista parecen ajustarse bastante bien.
+
+# Evaluémos el error cuadrático medio cometido entre los valores reales y los predichos.
+mse_prediccion = mean_squared_error(predReales,valoresPredichos)
+# 37.5630800473263 de mse

@@ -59,10 +59,10 @@ serieTr.SinTendEst.H1 = serieTr - aux[1:46]
 serieTs.SinTendEst.H1 = serieTs - aux[47:58]
 plot.ts(serieTr.SinTendEst.H1, xlim=c(1,tiempoTs[length(tiempoTs)]))
 lines(tiempoTs, serieTs.SinTendEst.H1, col='red')
-# quedando la serie sin estacionalidad.
+    # quedando la serie sin estacionalidad.
 
 #############################################################################################
-# ESTACIONARIDAD
+# ESTACIONARIEDAD
 
 # Visualizando ACF y encontrando que tiende a 0 muy rápidamente, podríamos pensar que es estacionaria
 acf(serieTr.SinTendEst.H1) # La tendencia a 0 es rápido y sobrepasa 0. Salimos de dudas con el test aumentado de Dickey-Fuller
