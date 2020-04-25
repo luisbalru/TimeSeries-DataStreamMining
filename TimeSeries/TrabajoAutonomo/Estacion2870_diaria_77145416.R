@@ -1,6 +1,6 @@
 # LUIS BALDERAS RUIZ. 77145416N
 # luisbalderas@correo.ugr.es
-# Ejercicio guiado. Curso 2019-2020
+# Ejercicio de trabajo autónomo. Series temporales. Curso 2019-2020
 
 # setwd("~/Universidad/Master/TimeSeries-DataStreamMining/TimeSeries/TrabajoAutonomo")
 
@@ -202,7 +202,7 @@ boxtestM2 = Box.test(modelo_ma.H1$residuals) # pvalue 0.6301 --> aleatoriedad
 JB2.H1 = jarque.bera.test(modelo_ma.H1$residuals) # pvalue 0.01484 --> rechazamos la hipótesis de normalidad
 SW2.H1 = shapiro.test(modelo_ma.H1$residuals) # pvalue 0.009127--> rechazamos la hipótesis de normalidad
 
-# Gráficamente vemos que los residuos son correctos porque siguen una normal
+# Gráfico de los residuos
 hist(modelo_ma.H1$residuals, col='blue', prob=T, ylim=c(0,0.3), xlim=c(-10,10))
 lines(density(modelo_ma.H1$residuals))
 
@@ -221,13 +221,13 @@ SW3.H1 = shapiro.test(modelo_ma2.H1$residuals) # pvalue 0.0089977--> rechazamos 
 
 # MSE
 library(scorer)
-# MODELO AR
+# MODELO AR(7)
 mean_squared_error(serieTr.SinTendEstC.H1, valoresAjustados1.H1)
 mean_squared_error(serieTs.SinTendEstC.H1, valoresPredichos1.H1)
 
 # El MSE en entrenamiento es 8.862888 y en test 55.84348
 
-# MODELO MA
+# MODELO AR(2)
 
 mean_squared_error(serieTr.SinTendEstC.H1, valoresAjustados4.H1)
 mean_squared_error(serieTs.SinTendEstC.H1, valoresPredichos4.H1)

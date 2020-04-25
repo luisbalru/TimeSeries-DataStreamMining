@@ -37,7 +37,6 @@
 
 \listoffigures
 
-\listoftables
 
 \newpage
 
@@ -180,17 +179,181 @@ Téngase en cuenta que cada valor $y_t$ puede interpretarse como una media móvi
 
 Elegimos los parámetros del modelo ARIMA (AR o MA) estudiando las gráficas ACF y PACF. En el caso de un modelo AR, para elegir el parámetro, utilizamos el último valor distinto de 0 (que se sale de los márgenes y resulta representativo, siendo los otros ruido). En el caso del modelo MA, examinamos la gráfica ACF en busca del último valor más representativo. \\
 
-Una vez entrenados los modelos, es necesario comprobar la bondad del ajuste, es decir, hay que evaluar la aleatoriedad de los residuos (Test de Box-Pierce) para comprobar si el modelo tiene sesgo; la normalidad de los residuos (Test de Jarque Bera y Shapiro-Wilk). Si no se comprueban las hipótesis mencionadas, los modelos no tienen un comportamiento correcto y no serán buenos predictores, por lo que deberían ser descartados. Además, para dos modelos que cumplan las hipótesis estadísticas, es necesario utilizar algún criterio para decidir cuál tiene mejor rendimiento. Para ello, utilizamos el error cuadrático medio sobre las instancias de test y el criterio de información de Akaike, que se basa en
+Una vez entrenados los modelos, es necesario comprobar la bondad del ajuste, es decir, hay que evaluar la aleatoriedad de los residuos (Test de Box-Pierce) para comprobar si el modelo tiene sesgo; la normalidad de los residuos (Test de Jarque Bera y Shapiro-Wilk). Si no se comprueban las hipótesis mencionadas, los modelos no tienen un comportamiento correcto y no serán buenos predictores, por lo que deberían ser descartados. Además, para dos modelos que cumplan las hipótesis estadísticas, es necesario utilizar algún criterio para decidir cuál tiene mejor rendimiento. Para ello, utilizamos el error cuadrático medio sobre las instancias de test y el criterio de información de Akaike (\cite{aic}), que se basa en
 
 $$ AIC = 2k + n\log(\frac{RSS}{n})$$
 siendo $k$ el número de grados de libertad, $n$ el número de datos y $RSS$ la suma de los cuadrados de los residuos. 
-\newpage
+
 \section{PARTE PRÁCTICA}
+
+La estación elegida es la 2870, correspondiente a la ciudad de Salamanca. La parte de preprocesamiento, explicada en la sección correspondiente del apartado anterior, ha sido común para ambos enfoques (diario y mensual) y se ha basado mayoritariamente en utilizar la biblioteca \textit{imputeTS} y el algoritmo Seasplit con medias móviles para imputar los valores perdidos. Una vez hecho eso, la estación diaria está formada por los días de febrero y marzo de cada año que tenemos disponible (con fin de predecir los 7 primeros días de marzo de 2018) y la mensual, tiene en un cuenta, en un 80\%, la media de la temperatura máxima del mes actual y en un 20\% el valor calculado para el mes anterior. De esta forma, partimos de las series listas para ser analizadas. 
 
 \subsection{Estación diaria}
 
+La estación diaria, utilizando la descomposición clásica, se muestra como sigue:
+
+ \begin{figure}[H] %con el [H] le obligamos a situar aquí la figura
+ 	\centering
+ 	\includegraphics[scale=0.31]{decomp-diario.png}  %el parámetro scale permite agrandar o achicar la imagen. En el nombre de archivo puede especificar directorios
+ 	\caption{Descomposición clásica de la serie temporal diaria} 
+ 	\label{fig:decomp-diaria}
+ \end{figure}
+
+Como ya expliqué en la sección anterior, la tendencia no sigue una función conocida para ser aproximada y, además, no tiene un criterio fijo de crecimiento y el rango de valores en la que se mueve es pequeño (apenas un par de grados). Por tanto, considero que es ruido. Modelo la estacionalidad con un periodo de 60 días, de forma que, al restarlo tanto en entrenamiento y test (7 días), obtengo el siguiente resultado:
+
+\begin{figure}[H] %con el [H] le obligamos a situar aquí la figura
+	\centering
+	\includegraphics[scale=0.25]{diaria-Sin-Est.png}  %el parámetro scale permite agrandar o achicar la imagen. En el nombre de archivo puede especificar directorios
+	\caption{Serie sin estacionalidad (en rojo el conjunto de test)} 
+	\label{fig:diaria-sinest2}
+\end{figure}
+
+Una vez eliminada la estacionalidad, es momento de estudiar la estacionariedad. A pesar de que el test de Dickey-Fuller aumentado da un valor de 0.01 < 0.05, por lo que se rechaza la hipótesis nula y la serie es estacionaria, la gráfica ACF 
+
+\begin{figure}[H] %con el [H] le obligamos a situar aquí la figura
+	\centering
+	\includegraphics[scale=0.25]{acf-diario.png}  %el parámetro scale permite agrandar o achicar la imagen. En el nombre de archivo puede especificar directorios
+	\caption{Gráfica ACF de la serie diaria} 
+	\label{fig:acf-diario}
+\end{figure}
+
+no converge rápidamente a cero y no ayuda para la búsqueda posterior de los parámetros de los modelos ARIMA. Por tanto, diferencio la serie en busca de valores más claros.
+\begin{figure}[H] %con el [H] le obligamos a situar aquí la figura
+	\centering
+	\includegraphics[scale=0.25]{acf-diario-d.png}  %el parámetro scale permite agrandar o achicar la imagen. En el nombre de archivo puede especificar directorios
+	\caption{Gráfica ACF de la serie diaria diferenciada} 
+	\label{fig:acf-diario-d}
+\end{figure}
+
+Vemos que ahora sí la convergencia a cero es muy rápida y sí podemos extraer ciertos valores distintos de cero para los modelos ARIMA. Presenta también la gráfica PACF
+
+\begin{figure}[H] %con el [H] le obligamos a situar aquí la figura
+	\centering
+	\includegraphics[scale=0.25]{pacf-diario-d.png}  %el parámetro scale permite agrandar o achicar la imagen. En el nombre de archivo puede especificar directorios
+	\caption{Gráfica PACF de la serie diaria diferenciada} 
+	\label{fig:pacf-diario-d}
+\end{figure}
+
+Antes de proponer los modelos ARIMA para predicción, centramos la serie en el 0, ya que si no el algoritmo no funciona correctamente. Para ello, le resto a la serie su media. Las gráficas ACF y PACF nos dan ciertos candidatos a parámetros para los modelos autoregresivos y de medias móviles. En el caso de AR, el gráfico PACF nos brinda los valores de p=2 y p=7 (más claramente 7). Para MA, el gráfica ACF nos da los mismos, así que esos son los modelos que entreno. Como he llevado a cabo una diferenciación, en vez de integrar la serie, indico en el parámetro $d=1$ en la creación que hemos diferenciado una vez. Para examinar la bondad del ajuste \textit{per se}, utilizamos el test de Box-Pierce para la aleatoriedad de los residuos y Jarque-Bera y Shapiro-Wilk para la normalidad de los mismos. Sólo los modelos autoregresivos pasan los tests, por lo que son los candidatos a ser evaluados como predictores. Veamos la predicción del AR(7)
+
+\begin{figure}[H] %con el [H] le obligamos a situar aquí la figura
+	\centering
+	\includegraphics[scale=0.25]{ar710-diario.png}  %el parámetro scale permite agrandar o achicar la imagen. En el nombre de archivo puede especificar directorios
+	\caption{Predicción en training y test para el modelo AR(7)} 
+	\label{fig:ar710-d}
+\end{figure}
+
+y del AR(2)
+
+\begin{figure}[H] %con el [H] le obligamos a situar aquí la figura
+	\centering
+	\includegraphics[scale=0.25]{ar210-diario.png}  %el parámetro scale permite agrandar o achicar la imagen. En el nombre de archivo puede especificar directorios
+	\caption{Predicción en training y test para el modelo AR(2)} 
+	\label{fig:ar210-d}
+\end{figure}
+
+para training y test.\\
+
+Pasamos ahora a decidir qué modelo es el que tiene mejor rendimiento para hacer la predicción. En primer lugar, calculo el error cuadrático medio en la predicción en training y test para cada uno de los modelos. En el caso de AR(7), el MSE vale 8.862888 y 55.84348 respectivamente. Para AR(2), 11.62977 Y 60.46596. Como se puede ver, el error es considerablemente mayor para AR(7). Sin embargo, para terminar de confirmar, utilizo el coeficiente AIC. El resultado nos muestra un valor de 1298.999 para AR(7) con 8 parámetros, mientras que para AR(2) obtenemos 3 parámetros libres y 1356.924. A pesar de que el modelo AR(7) es más complejo que AR(2), comete menos errores y el valor de AIC es menor, por lo que es el idóneo para hacer la predicción. \\
+
+Una vez terminado el análisis, es momento de repetir todo el proceso sobre la serie completa y realizar la predicción. Por tanto, modelo la estacionalidad para la serie completa con 60 valores, centro la serie en el cero, genero el modelo AR(7), hago la predicción, y devuelvo los cambios, sumándole de nuevo la media y la estacionalidad. Gráficamente, el resultado de la predicción es el siguiente:
+
+\begin{figure}[H] %con el [H] le obligamos a situar aquí la figura
+	\centering
+	\includegraphics[scale=0.25]{pred-diario1.png}  %el parámetro scale permite agrandar o achicar la imagen. En el nombre de archivo puede especificar directorios
+	\caption{Predicción de los 7 primeros días de marzo (rojo)} 
+	\label{fig:pred-diario1}
+\end{figure}
+
+Como el conjunto de datos es público y accesible, he descargado los valores correspondientes a los 7 días, incorporándolos al gráfico
+
+\begin{figure}[H] %con el [H] le obligamos a situar aquí la figura
+	\centering
+	\includegraphics[scale=0.25]{pred-diario2.png}  %el parámetro scale permite agrandar o achicar la imagen. En el nombre de archivo puede especificar directorios
+	\caption{Predicción de los 7 primeros días de marzo (rojo) frente a valores reales (verde)} 
+	\label{fig:pred-diario2}
+\end{figure}
+
+viendo que en los primeros días se acerca más pero que luego el resultado es muy dispar; y calculando el error cuadrático medio (37.56308) por lo que podemos extraer que el modelo ARIMA tiene un mal rendimiento para predicciones a un futuro ``lejano'', siendo más conveniente su uso en predicciones inmediatamente posteriores a los datos que tenemos.
+
+
 \subsection{Estación mensual}
 
+La estación mensual, utilizando la descomposición aditiva clásica, se muestra como sigue:
+
+ \begin{figure}[H] %con el [H] le obligamos a situar aquí la figura
+	\centering
+	\includegraphics[scale=0.31]{decom-mensual.png}  %el parámetro scale permite agrandar o achicar la imagen. En el nombre de archivo puede especificar directorios
+	\caption{Descomposición clásica de la serie temporal mensual} 
+	\label{fig:decomp-mensual}
+\end{figure}
+
+
+Como ya pasaba en la estación diaria, la tendencia es inexistente por la que la establezco como ruido, y trato la estacionalidad con periodo 12 (anual). Tras restarla, la serie temporal resultado es la siguiente:
+
+ \begin{figure}[H] %con el [H] le obligamos a situar aquí la figura
+	\centering
+	\includegraphics[scale=0.31]{mensual-sinest.png}  %el parámetro scale permite agrandar o achicar la imagen. En el nombre de archivo puede especificar directorios
+	\caption{Serie temporal sin estacionalidad} 
+	\label{fig:mensual-sinest}
+\end{figure}
+
+A continuación, estudio la estacionariedad. El test de Dickey-Fuller da un p-valor de 0.27, por lo que no podemos rechazar la hipótesis de que no es estacionaria. Es clara la necesidad de diferenciar, obteniéndose después un p-valor de 0.01 (confirmando ahora sí la estacionariedad). Vemos las gráficas ACF
+
+ \begin{figure}[H] %con el [H] le obligamos a situar aquí la figura
+	\centering
+	\includegraphics[scale=0.31]{acf2-mensual.png}  %el parámetro scale permite agrandar o achicar la imagen. En el nombre de archivo puede especificar directorios
+	\caption{Gráfica ACF tras diferenciar la serie mensual} 
+	\label{fig:acf-mensual}
+\end{figure}
+
+y PACF
+
+ \begin{figure}[H] %con el [H] le obligamos a situar aquí la figura
+	\centering
+	\includegraphics[scale=0.31]{pacf1-mensual.png}  %el parámetro scale permite agrandar o achicar la imagen. En el nombre de archivo puede especificar directorios
+	\caption{Gráfica PACF tras diferenciar la serie mensual} 
+	\label{fig:pacf-mensual}
+\end{figure}
+
+
+Ambas gráficas nos ilustran para elegir los parámetros de los modelos ARIMA (p=3 por PACF y q=3 por ACF), dando lugar a los modelos AR(3) y MA(3). Ambos dos cumplen los test estadísticos de normalidad y aleatoriedad de los residuos, por lo que son susceptibles de ser examinados, generando las siguientes predicciones para AR(3)
+
+  \begin{figure}[H] %con el [H] le obligamos a situar aquí la figura
+ 	\centering
+ 	\includegraphics[scale=0.31]{pred-ar310-mensual.png}  %el parámetro scale permite agrandar o achicar la imagen. En el nombre de archivo puede especificar directorios
+ 	\caption{Predicción del modelo AR(3) para serie mensual} 
+ 	\label{fig:ar310}
+ \end{figure}
+
+y MA(3)
+
+\begin{figure}[H] %con el [H] le obligamos a situar aquí la figura
+	\centering
+	\includegraphics[scale=0.31]{pred-ma013-mensual.png}  %el parámetro scale permite agrandar o achicar la imagen. En el nombre de archivo puede especificar directorios
+	\caption{Predicción del modelo MA(3) para serie mensual} 
+	\label{fig:ma013}
+\end{figure}
+ 
+viéndose que el MA está mas cerca de los valores reales que el AR. A continuación, vemos qué modelo tiene mejor rendimiento. Primero, calculo el error cuadrático medio sobre las predicciones de training y test. Para AR(3), los valores son 0.8920383 y 5.480675, respectivamente. Para MA, 0.862258 y 2.286113, lo que confirma lo que veíamos de forma intuitiva en la gráfica. Además, el criterio AIC nos dice que ambos tienen el mismo número de parámetros libres, 4, pero que el valor de AIC para el modelo de medias móviles es ligeramente menor que el autoregresivo (132.0259 frente a 132.682). Por tanto, uniendo ambas cosas, decido que el modelo de medias móviles es el más conveniente para hacer la predicción. Por tanto, partiendo de la serie completa, realizo todos los pasos antes mencionados para predecir y deshago las operaciones para que los valores resultantes sean reales, obteniéndose la siguiente predicción final, es decir, los valores de temperatura máxima de marzo y abril de 2018:
+
+\begin{figure}[H] %con el [H] le obligamos a situar aquí la figura
+	\centering
+	\includegraphics[scale=0.31]{prediccion-mensual.png}  %el parámetro scale permite agrandar o achicar la imagen. En el nombre de archivo puede especificar directorios
+	\caption{Predicción final de los valores de marzo y abril de 2018 (rojo)} 
+	\label{fig:predf}
+\end{figure}
+
+Además, como los datos reales son públicos, los incluyo en la gráfica final
+
+\begin{figure}[H] %con el [H] le obligamos a situar aquí la figura
+	\centering
+	\includegraphics[scale=0.3]{prediccion-mensual-final.png}  %el parámetro scale permite agrandar o achicar la imagen. En el nombre de archivo puede especificar directorios
+	\caption{Predicción final de los valores de marzo y abril de 2018 (rojo) y valores reales (verde)} 
+	\label{fig:predmf}
+\end{figure}
+
+y calculo su error cuadrático medio (0.907640594619933), viendo que el la predicción se acerca mucho a la real y el error es pequeño, reforzando mi conclusión anterior, ya que en este caso sólo teníamos que predecir dos valores (en vez de 7), por lo que el modelo ARIMA es más efectivo.
 \newpage
 \section{Bibliografía}
 

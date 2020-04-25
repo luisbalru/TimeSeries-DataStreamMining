@@ -1,6 +1,6 @@
 # LUIS BALDERAS RUIZ. 77145416N
 # luisbalderas@correo.ugr.es
-# Ejercicio Autónomo. Mensual. Curso 2019-2020
+# Ejercicio de trabajo autónomo. Series temporales. Curso 2019-2020
 
 # setwd("~/Documentos/Master/TimeSeries-DataStreamMining/TimeSeries/TrabajoAutonomo")
 
@@ -59,7 +59,7 @@ serieTr.SinTendEst.H1 = serieTr - aux[1:46]
 serieTs.SinTendEst.H1 = serieTs - aux[47:58]
 plot.ts(serieTr.SinTendEst.H1, xlim=c(1,tiempoTs[length(tiempoTs)]))
 lines(tiempoTs, serieTs.SinTendEst.H1, col='red')
-    # quedando la serie sin estacionalidad.
+# quedando la serie sin estacionalidad.
 
 #############################################################################################
 # ESTACIONARIEDAD
